@@ -1,0 +1,33 @@
+name: 이관 골든 검증
+
+# lib/*.ts (JS/TS 이관본)가 legacy/streamlit_app_actual_tou_v30.py(원본)와
+# 정확히 같은 값을 내는지, PR/커밋마다 자동으로 대조한다.
+# PRAS-DER 저장소의 golden.yml과 같은 목적.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  golden:
+    name: 골든 대조 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: 타입 검사
+        run: npm run typecheck
+
+      - name: 요금·구독 계산 골든 검증
+        run: npm run test:golden
