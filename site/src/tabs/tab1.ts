@@ -1,0 +1,176 @@
+/**
+ * 탭 1 "2024~2025년 사용량 분석" — 원본 L(with T1: 블록) 이관.
+ * 지표 카드 5개 → 월별 평균 사용량 라인차트 → (월별 변화표 / 사용량 증감률 분포 막대)
+ * → 계절·주중·주말 선택형 평균 부하곡선.
+ */
+
+import type { AppContext } from "../main.js";
+import {
+  clear,
+  metricGrid,
+  type MetricSpec,
+  renderTable,
+  type ColumnSpec,
+  sectionCard,
+  cardRow,
+  sectionTitle,
+  controlsRow,
+  selectField,
+  radioField,
+} from "../ui.js";
+import { lineChart, barChart, type LineSeries, type BarDatum } from "../charts.js";
+import type { OverallMonthlyRow, MonthlyChangeRow, OverallProfileRow } from "../data.js";
+import { fmtKwh, fmtPct } from "../../../lib/format.js";
+import { SEASON_MONTHS } from "../../../lib/timeseries.js";
+import type { EnrichedCustomer } from "../../../lib/enrich.js";
+
+const SEASON_KEYS = Object.keys(SEASON_MONTHS);
+
+// 탭 내부 위젯 상태(원본 st.selectbox/st.radio의 key="overview_season"/"overview_day"에 대응) —
+// 사이드바 값과 달리 이 탭 안에서만 유지되는 로컬 상태다.
+let selectedSeason: string = SEASON_KEYS[0]; // "봄가을"
+let selectedDayType: "주중" | "주말" = "주중";
+
+export function renderTab1(root: HTMLElement, ctx: AppContext): void {
+  clear(root);
+  const { raw, state } = ctx;
+  const S = raw.stats;
+
+  // ── 지표 카드 5개 ──
+  const changeRate = S.연평균증감률;
+  const metrics: MetricSpec[] = [
+    { label: "분석 대상 고객", value: `${S["2개년핵심고객수"].toLocaleString("ko-KR")}명` },
+    { label: "2024년 연평균 사용량", value: fmtKwh(S["2024연평균kWh"]) },
+    {
+      label: "2025년 연평균 사용량",
+      value: fmtKwh(S["2025연평균kWh"]),
+      delta: fmtPct(changeRate),
+      deltaDirection: changeRate < 0 ? "down" : "up",
+    },
+    { label: "동일 그룹 유지 비율", value: fmtPct(S.군집유지율) },
+    { label: "추천 요금제 유지 비율", value: fmtPct(state.tariffDynamic.annualStability) },
+  ];
+  root.append(metricGrid(metrics));
+
+  // ── 월별 고객당 평균 사용량(2024 vs 2025) ──
+  root.append(monthlyUsageLineChart(raw.overallMonthly));
+
+  // ── 좌: 월별 변화표 / 우: 연간 사용량 증감률 분포 ──
+  const leftCard = sectionCard(null, [monthlyChangeTable(raw.monthlyChange)]);
+  const rightCard = sectionCard(null, [usageChangeDistributionChart(state.enriched)]);
+  root.append(cardRow([leftCard, rightCard]));
+
+  // ── 계절·주중/주말 평균 부하곡선 ──
+  root.append(...sectionTitle("계절·주중/주말 평균 부하곡선"));
+  const seasonControl = selectField(
+    "계절",
+    SEASON_KEYS.map((k) => ({ value: k, label: k })),
+    selectedSeason,
+    (v) => {
+      selectedSeason = v;
+      renderTab1(root, ctx);
+    }
+  );
+  const dayTypeControl = radioField(
+    "일 유형",
+    [
+      { value: "주중", label: "주중" },
+      { value: "주말", label: "주말" },
+    ],
+    selectedDayType,
+    (v) => {
+      selectedDayType = v as "주중" | "주말";
+      renderTab1(root, ctx);
+    }
+  );
+  root.append(controlsRow([seasonControl, dayTypeControl]));
+  root.append(profileLineChart(raw.overallProfiles, selectedSeason, selectedDayType));
+}
+
+/** 월별 고객당 평균 사용량 라인차트(원본 om=D["overall_monthly"]..., px.line). */
+function monthlyUsageLineChart(overallMonthly: OverallMonthlyRow[]): HTMLDivElement {
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const years = [2024, 2025];
+  const series: LineSeries[] = years.map((year, idx) => ({
+    name: String(year),
+    colorIndex: idx,
+    values: months.map((m) => {
+      const row = overallMonthly.find((r) => r.연도 === year && r.월 === m);
+      return row ? row.고객당평균_kWh : null;
+    }),
+  }));
+  return lineChart({
+    xLabels: months,
+    series,
+    xTickEvery: 1,
+    yFormat: fmtKwh,
+    yLabel: "고객당 평균 사용량(kWh)",
+  });
+}
+
+/** 월별 변화표(원본 mc=D["monthly_change"][...] .rename(...)). */
+function monthlyChangeTable(monthlyChange: MonthlyChangeRow[]): HTMLDivElement {
+  const rows = monthlyChange.map((r) => ({
+    월: String(r.월),
+    "2024년 고객당 평균 사용량(kWh)": r["2024고객당평균_kWh"],
+    "2025년 고객당 평균 사용량(kWh)": r["2025고객당평균_kWh"],
+    "사용량 증감(kWh)": r.증감_kWh,
+    "증감률(%)": r.증감률 * 100,
+    "경부하 비중 증감(%p)": r.경부하비중증감p * 100,
+    "최대부하 비중 증감(%p)": r.최대부하비중증감p * 100,
+  }));
+  const columns: ColumnSpec<Record<string, unknown>>[] = [
+    { key: "월", label: "월", kind: "text" },
+    { key: "2024년 고객당 평균 사용량(kWh)", label: "2024년 고객당 평균 사용량(kWh)", kind: "number" },
+    { key: "2025년 고객당 평균 사용량(kWh)", label: "2025년 고객당 평균 사용량(kWh)", kind: "number" },
+    { key: "사용량 증감(kWh)", label: "사용량 증감(kWh)", kind: "number" },
+    { key: "증감률(%)", label: "증감률(%)", kind: "percent" },
+    { key: "경부하 비중 증감(%p)", label: "경부하 비중 증감(%p)", kind: "percent" },
+    { key: "최대부하 비중 증감(%p)", label: "최대부하 비중 증감(%p)", kind: "percent" },
+  ];
+  return renderTable(columns, rows);
+}
+
+/** 연간 사용량 증감률 분포 막대(원본 pd.cut(customers["연간사용량증감률"], [...])). */
+function usageChangeDistributionChart(enriched: EnrichedCustomer[]): HTMLDivElement {
+  const bins: { label: string; test: (v: number) => boolean }[] = [
+    { label: "20% 이상 감소", test: (v) => v <= -0.2 },
+    { label: "5~20% 감소", test: (v) => v > -0.2 && v <= -0.05 },
+    { label: "±5% 이내", test: (v) => v > -0.05 && v <= 0.05 },
+    { label: "5~20% 증가", test: (v) => v > 0.05 && v <= 0.2 },
+    { label: "20% 이상 증가", test: (v) => v > 0.2 },
+  ];
+  const counts = bins.map(() => 0);
+  for (const c of enriched) {
+    const v = c.연간사용량증감률;
+    const idx = bins.findIndex((b) => b.test(v));
+    if (idx >= 0) counts[idx]++;
+  }
+  const total = enriched.length;
+  const data: BarDatum[] = bins.map((b, i) => ({ label: b.label, value: counts[i] }));
+  return barChart({
+    data,
+    valueFormat: (v) => `${total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"}%`,
+  });
+}
+
+/** 계절·주중/주말 평균 부하곡선(원본 pp=D["overall_profiles"][...], px.line). */
+function profileLineChart(overallProfiles: OverallProfileRow[], season: string, dayType: string): HTMLDivElement {
+  const filtered = overallProfiles.filter((r) => r.계절 === season && r.일유형 === dayType);
+  const hours = Array.from({ length: 24 }, (_, i) => i + 1);
+  const years = [2024, 2025];
+  const series: LineSeries[] = years.map((year, idx) => ({
+    name: String(year),
+    colorIndex: idx,
+    values: hours.map((h) => {
+      const row = filtered.find((r) => r.연도 === year && r.시간 === h);
+      return row ? row.고객당평균_kWh : null;
+    }),
+  }));
+  return lineChart({
+    xLabels: hours,
+    series,
+    xTickEvery: 1,
+    yFormat: (v) => `${v.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}kWh/h`,
+  });
+}

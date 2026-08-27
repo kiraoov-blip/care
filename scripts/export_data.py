@@ -123,15 +123,21 @@ write_json(
 )
 
 # ── clusters.json: kmeans 군집분석 결과 (여기서 한 번만 계산) ──
-stacked, summary, wide, transition = call("joint_dynamic_clusters", customers, 8)
-write_json(
-    "clusters.json",
-    {
+# 원본 사이드바의 "공통 그룹 수" 슬라이더(3~8)는 값을 바꿀 때마다 joint_dynamic_clusters를
+# 그 k로 다시 돌린다. np.random.default_rng(42) 기반 kmeans라 브라우저에서 비트단위로
+# 재현할 수 없는 건 여기도 마찬가지라(Stage 3 lib/enrich.ts 주석 참고), 슬라이더가 실제로
+# 동작하도록 k=3~8 여섯 값 전부를 여기서 한 번씩 미리 계산해 둔다. k=8은 golden_capture.py의
+# clustering_and_enrich_full·enrich.test.ts가 그대로 대조하는 기존 clusters.json 자리를
+# 유지하고(파일명·형식 변경 없음), 나머지 k=3~7은 site/의 그룹 수 슬라이더 전용으로
+# clusters-3.json ~ clusters-7.json에 추가로 내보낸다.
+for k in (3, 4, 5, 6, 7, 8):
+    stacked, summary, wide, transition = call("joint_dynamic_clusters", customers, k)
+    payload = {
         "wide": wide.to_dict("records"),
         "summary": summary.round(6).to_dict("records"),
         "transition": transition.round(6).to_dict("records"),
-    },
-)
+    }
+    write_json("clusters.json" if k == 8 else f"clusters-{k}.json", payload)
 
 # ── daily.json: 고객×일별 사용량 (52만행 → 날짜축 1번 + 고객당 숫자배열 712개) ──
 daily = data["daily"]
@@ -195,5 +201,18 @@ write_json(
 # ── overall-profiles.json: 연도×계절×일유형×시간 전체 평균 (288행, 압축 없이 그대로) ──
 overall_profiles = data["overall_profiles"]
 write_json("overall-profiles.json", overall_profiles.to_dict("records"))
+
+# ── stats.json / overall-monthly.json / monthly-change.json: Stage 5(UI) 1번 탭이 쓰는
+#    작은 정적 요약표 3개. load_data()가 legacy/analysis_stats.json·overall_monthly.csv·
+#    monthly_change.csv를 그대로 읽어들인 것이라 별도 계산 없이 그대로 JSON으로 옮긴다. ──
+write_json("stats.json", data["stats"])
+write_json("overall-monthly.json", data["overall_monthly"].to_dict("records"))
+write_json("monthly-change.json", data["monthly_change"].to_dict("records"))
+
+# ── glossary.json: Stage 5(UI) 8번 탭(용어·문구 해설)이 쓰는 정적 참고 테이블.
+#    build_glossary()는 순수 텍스트 설명(연산 없음)이라 TypeScript로 다시 옮기지 않고,
+#    Python에서 한 번 계산한 결과를 그대로 내보낸다(clusters.json과 같은 판단). ──
+glossary = call("build_glossary")
+write_json("glossary.json", glossary.to_dict("records"))
 
 print("완료.")

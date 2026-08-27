@@ -25,7 +25,7 @@
  * buildMonthlyMonitor의 주석 참고).
  */
 
-import { residentialBill, touBill, subscriptionBill, TOU_CONTRACT_KW } from "./tariff";
+import { residentialBill, touBill, subscriptionBill, TOU_CONTRACT_KW, type SurchargeRates } from "./tariff";
 import type { EnrichedCustomer } from "./enrich";
 import { forecastMonthLongitudinal, alertLevel, type DailyRow } from "./forecast";
 
@@ -57,12 +57,16 @@ export interface MonthlyRow {
   최대부하비중: number;
 }
 
-interface FeeParams {
+export interface FeeParams {
   basicFee: number;
   basicInc: number;
   premiumFee: number;
   premiumInc: number;
   overage: number;
+  /** 사이드바 "제주 TOU 계약전력 가정" — 생략하면 원본 기본값(3.0kW)과 동일. */
+  contractKw?: number;
+  /** 사이드바 "부가요금·세금" 4개 입력 — 생략하면 원본 기본값과 동일(lib/tariff.ts 참고). */
+  surchargeRates?: SurchargeRates;
 }
 
 // ── monthly_bill_map (L667~674) ───────────────────────────────────────
@@ -73,14 +77,15 @@ export function monthlyBillMap(
   fee: FeeParams
 ): Record<PlanName, number> {
   return {
-    "일반 주택용(저압)": residentialBill(usage, month),
+    "일반 주택용(저압)": residentialBill(usage, month, fee.surchargeRates),
     "제주 TOU": touBill(
       usage,
       month,
       monthlyRow.경부하비중,
       monthlyRow.중간부하비중,
       monthlyRow.최대부하비중,
-      TOU_CONTRACT_KW
+      fee.contractKw ?? TOU_CONTRACT_KW,
+      fee.surchargeRates
     ),
     "구독 기본형": subscriptionBill(usage, fee.basicFee, fee.basicInc, fee.overage),
     "구독 프리미엄형": subscriptionBill(usage, fee.premiumFee, fee.premiumInc, fee.overage),

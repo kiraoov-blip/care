@@ -74,18 +74,40 @@ export function allocateIntegerKwh(totalKwh: number, shares: number[]): number[]
 }
 
 // ── 한전 청구 계산 순서 (L454~493) ────────────────────────────────────
-export function finalizeElectricBill(baseFee: number, energyCharge: number, kwh: number): number {
+/** 사이드바 "부가요금·세금" 4개 입력(연료비조정단가·기후환경요금단가·부가가치세율·
+ * 전력산업기반기금 요율)에 대응한다. 원본은 이 값들을 모듈 전역(FUEL_ADJUSTMENT_RATE 등)에
+ * 재대입해 반영하는데, TS에서는 그 네 상수를 그대로 기본값으로 쓰는 선택적 인자로
+ * 옮겼다 — 인자를 안 넘기면(기존 골든 테스트 호출부 전부) 이전과 100% 동일하다. */
+export interface SurchargeRates {
+  fuel: number;
+  climate: number;
+  vat: number;
+  fund: number;
+}
+const DEFAULT_SURCHARGE_RATES: SurchargeRates = {
+  fuel: FUEL_ADJUSTMENT_RATE,
+  climate: CLIMATE_ENV_RATE,
+  vat: VAT_RATE,
+  fund: POWER_FUND_RATE,
+};
+
+export function finalizeElectricBill(
+  baseFee: number,
+  energyCharge: number,
+  kwh: number,
+  rates: SurchargeRates = DEFAULT_SURCHARGE_RATES
+): number {
   // 한전 계산순서에 따라 일반·TOU 최종 청구액을 계산함.
   // 기본요금·전력량요금·기후환경요금·연료비조정액은 원 미만 절사,
   // 부가가치세는 원 미만 반올림, 전력산업기반기금 및 최종 청구액은 10원 미만 절사함.
   const usage = billedKwh(kwh);
   const basic = truncateWon(baseFee);
   const energy = truncateWon(energyCharge);
-  const fuel = truncateWon(usage * FUEL_ADJUSTMENT_RATE);
-  const climate = truncateWon(usage * CLIMATE_ENV_RATE);
+  const fuel = truncateWon(usage * rates.fuel);
+  const climate = truncateWon(usage * rates.climate);
   const electricityCharge = basic + energy + fuel + climate;
-  const vat = roundHalfUp(electricityCharge * VAT_RATE);
-  const fund = truncate10Won(electricityCharge * POWER_FUND_RATE);
+  const vat = roundHalfUp(electricityCharge * rates.vat);
+  const fund = truncate10Won(electricityCharge * rates.fund);
   return truncate10Won(electricityCharge + vat + fund);
 }
 
@@ -104,17 +126,18 @@ export interface BillComponentBreakdown {
 export function billComponentBreakdown(
   baseFee: number,
   energyCharge: number,
-  kwh: number
+  kwh: number,
+  rates: SurchargeRates = DEFAULT_SURCHARGE_RATES
 ): BillComponentBreakdown {
   // 화면 검증용 요금 구성요소.
   const usage = billedKwh(kwh);
   const basic = truncateWon(baseFee);
   const energy = truncateWon(energyCharge);
-  const fuel = truncateWon(usage * FUEL_ADJUSTMENT_RATE);
-  const climate = truncateWon(usage * CLIMATE_ENV_RATE);
+  const fuel = truncateWon(usage * rates.fuel);
+  const climate = truncateWon(usage * rates.climate);
   const electricityCharge = basic + energy + fuel + climate;
-  const vat = roundHalfUp(electricityCharge * VAT_RATE);
-  const fund = truncate10Won(electricityCharge * POWER_FUND_RATE);
+  const vat = roundHalfUp(electricityCharge * rates.vat);
+  const fund = truncate10Won(electricityCharge * rates.fund);
   const total = truncate10Won(electricityCharge + vat + fund);
   return {
     "요금계산 사용량(kWh)": usage,
@@ -157,9 +180,13 @@ export function residentialBaseEnergy(
   return { basic, energy, u };
 }
 
-export function residentialBill(kwh: number, month: number): number {
+export function residentialBill(
+  kwh: number,
+  month: number,
+  rates: SurchargeRates = DEFAULT_SURCHARGE_RATES
+): number {
   const { basic, energy, u } = residentialBaseEnergy(kwh, month);
-  return finalizeElectricBill(basic, energy, u);
+  return finalizeElectricBill(basic, energy, u, rates);
 }
 
 // ── 제주 주택용 계시별(TOU) 요금 (L528~545) ───────────────────────────
@@ -196,10 +223,11 @@ export function touBill(
   offShare: number,
   midShare: number,
   peakShare: number,
-  contractKw: number | null = null
+  contractKw: number | null = null,
+  surchargeRates: SurchargeRates = DEFAULT_SURCHARGE_RATES
 ): number {
   const { basic, energy, u } = touBaseEnergy(kwh, month, offShare, midShare, peakShare, contractKw);
-  return finalizeElectricBill(basic, energy, u);
+  return finalizeElectricBill(basic, energy, u, surchargeRates);
 }
 
 // ── 구독형 요금 (L547~571) ─────────────────────────────────────────────

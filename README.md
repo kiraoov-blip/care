@@ -18,10 +18,11 @@ design/   Stage 5 UI에 쓸 색상 팔레트 등 디자인 참고 문서
 
 ### site/ — 지금 당장 배포되는 것
 
-지금은 `care-jeju-v30.streamlit.app`을 그대로 iframe으로 감싸는 얇은 래퍼입니다.
-실제 계산은 여전히 Streamlit 서버에서 돕니다. Stage 1~5 이관이 끝나면 이 폴더의 내용이
-Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의 hp/ev/pv-ess 시뮬레이터처럼
-브라우저에서 직접 계산하는 형태가 됩니다.
+Stage 5(최종 UI)까지 끝나서, 더 이상 `care-jeju-v30.streamlit.app`을 iframe으로 감싸지
+않습니다. `site/`는 이제 그 자체로 완결된 정적 사이트이고, 브라우저에서 `lib/*.ts`(TS→JS로
+컴파일된 것)를 직접 실행해 모든 계산을 수행합니다 — Streamlit 서버는 더 이상 필요 없습니다.
+PRAS-DER처럼 프레임워크 없는 순수 TypeScript + 브라우저 네이티브 ES 모듈 + 손으로 짠 SVG
+차트로 만들었습니다(자세한 구조는 아래 "Stage 5" 절 참고).
 
 `.github/workflows/deploy-pages.yml`은 `site/` 안의 내용만 GitHub Pages에 올립니다.
 `legacy/`의 12MB 데이터는 배포 대상이 아닙니다.
@@ -185,15 +186,92 @@ Stage 2·3에서 미뤄뒀던 `daily`(52만행)·`profiles`(82만행) 압축 인
 역사상 처음으로 "unavailable"이 아닌 실제 값으로 채워지는 것이므로 반드시
 한 번 다시 돌려주셔야 완전한 대조가 됩니다.
 
+### site/src/ — Stage 5: 최종 UI (8개 탭)
+
+`lib/*.ts`가 계산을, `site/src/*.ts`가 화면을 맡습니다. React/Vue 같은 프레임워크나 차트
+라이브러리(Chart.js/Plotly 등)는 전혀 쓰지 않았습니다 — Next.js는 이 이관 샌드박스에
+설치할 수 없었고, 배포된 정적 GitHub Pages 사이트는 CDN 스크립트를 쓸 수는 있었지만(이
+샌드박스의 설치 제한과는 별개 문제) 배포본을 CDN 하나 없이 완전히 자기 완결적으로
+유지하려고 일부러 쓰지 않았습니다. 대신 `tsc`로 컴파일한 순수 TS → 브라우저 네이티브
+`<script type="module">`와, 이 파일 안에서 직접 그리는 SVG 차트 3종(라인·막대·히트맵)만
+씁니다.
+
+- **`site/src/main.ts`**: 앱 부트스트랩. 사이드바(공통 그룹 수 슬라이더 + 요금 가정 6개
+  입력 + 부가요금·세금 4개 입력)와 상단 탭 8개를 구성하고, `data.ts`가 로드·계산한 상태를
+  `AppContext`로 각 탭에 넘깁니다. 사이드바 값이 바뀌면 `enrichScores`/`dynamicTariffAnalysis`를
+  다시 돌리고, 현재 활성 탭만 즉시 다시 그리며(비활성 탭은 dirty 표시만 해 뒀다가 다음에
+  열릴 때 그리는 지연 재렌더) — Streamlit의 "위젯 바뀌면 전체 자동 재실행" 모델을
+  React 없이 흉내 낸 것입니다.
+- **`site/src/data.ts`**: `data/*.json` 정적 데이터를 fetch로 불러와 `lib/*.ts` 함수가 바로
+  쓸 수 있는 타입으로 노출(`loadRawData`)하고, 사이드바 값이 바뀔 때마다 다시 계산해야 하는
+  파생 상태(`computeDerivedState` — enrichScores/dynamicTariffAnalysis/daily 디코딩)를
+  구성합니다.
+- **`site/src/ui.ts`** / **`site/src/charts.ts`**: 8개 탭이 공통으로 쓰는 DOM 유틸(표·지표
+  카드·필터 컨트롤·배지·경고박스·CSV 다운로드)과 SVG 차트 3종(라인/막대/히트맵 — 색상은
+  `dataviz` 스킬의 기본 팔레트 slot 1~4를 `scripts/validate_palette.js`로 검증해 그대로
+  사용, CARE 자체 5단계 경고색과는 분리해서 씀).
+- **`site/src/tabs/tab1.ts` ~ `tab8.ts`**: 원본의 8개 탭(`T1`~`T8`, 원본 L1363~1852)을
+  1:1로 옮겼습니다. 탭 자체는 계산을 하지 않고 전부 `lib/*.ts` 함수 호출 결과를 그릴
+  뿐입니다. 각 탭 파일의 위젯(고객 선택, 연도/월/조회일, 계절/일유형, 필터 등)은 원본의
+  Streamlit 세션 상태에 대응해 모듈 스코프 `let` 변수로 유지하고, 값이 바뀌면 그 탭
+  함수를 다시 호출해 처음부터 다시 그리는 방식(멱등 전체 재렌더)으로 구현했습니다.
+
+**원본과 다른 점(모두 의도적이고, 아래 세 가지뿐입니다):**
+
+1. **탭6의 "100가구 무작위 추출"**: 원본은 `np.random.default_rng(seed)`(numpy PCG64)로
+   712명 중 100명을 뽑는데, 이 비트제너레이터를 JS에서 그대로 재현할 수 없습니다(Stage 3의
+   군집분석과 같은 이유). 이 브라우저 세션 안에서만 결정론적인 자체 seeded PRNG(mulberry32)로
+   대체했고, 화면에도 "표본추출번호가 같아도 원본 파이썬과 100가구 구성이 100% 동일하지는
+   않다"는 안내문을 넣었습니다.
+2. **탭6의 ZIP 다운로드**: zip 라이브러리를 쓸 수 없어, "100가구 분석결과 ZIP" 버튼 하나
+   대신 CSV 다운로드 버튼 2개(고객목록/변압기제어상세)로 나눴습니다 — 내용은 원본이 zip에
+   담았을 두 CSV와 동일합니다.
+3. **탭2/탭3의 "공통 그룹 수" 슬라이더**: 원본은 슬라이더를 움직일 때마다
+   `joint_dynamic_clusters`를 다시 돌리는데, 이 역시 numpy RNG라 브라우저에서 재현할 수
+   없습니다. 대신 `scripts/export_data.py`가 3~8 여섯 개 값 전부를 미리 Python에서 계산해
+   `data/clusters-{3..7}.json` + `data/clusters.json`(k=8)로 내보냈고, 슬라이더는 그 중
+   하나를 골라 보여주는 방식으로 실제로 동작합니다(고정값이 아닙니다).
+
+이 세 가지 외에는 텍스트·수치·판정 로직 전부 원본과 동일합니다(계산은 이미 골든
+테스트로 검증된 `lib/*.ts`를 그대로 호출하기 때문입니다).
+
+**빌드**는 2단계입니다 — `lib/*.ts`의 기존 확장자 없는 상대 임포트(`from "./tariff"`)는
+`tsx`로 테스트를 돌릴 땐 문제없지만, 브라우저 네이티브 ES 모듈은 상대 경로에 `.js` 확장자를
+요구합니다. 그렇다고 이미 골든 검증까지 끝난 `lib/*.ts` 원본을 고치고 싶지는 않아서:
+
+```bash
+npm run build:site
+# = tsc -p tsconfig.site.json          (lib/**/*.ts + site/src/**/*.ts → site/dist/, 임포트 문자열은 그대로 보존)
+#   && python3 scripts/fix-esm-extensions.py   (컴파일된 .js 안의 확장자 없는 상대 import에만 .js를 붙임)
+```
+
+두 번째 단계는 컴파일된 **출력**(`site/dist/**/*.js`)만 고치고 `lib/*.ts` 소스 파일은
+전혀 건드리지 않습니다. `site/src/*.ts`는 처음부터 명시적 `.js` 확장자로 작성해서
+대부분의 파일에는 이 후처리가 사실 아무 일도 하지 않습니다(실측: `lib/tariff-monitor.js`
+1개 파일만 실제로 고쳐졌습니다 — 나머지 lib 파일의 확장자 없는 임포트는 전부 타입 전용
+`import type`이라 컴파일 시 아예 사라집니다).
+
+로컬에서 헤드리스 Chromium(Playwright)으로 8개 탭 전부 클릭해 실데이터로 그려지는지,
+콘솔 에러가 없는지 확인했습니다(유일한 콘솔 에러는 이 샌드박스의 네트워크 제한으로 인한
+Pretendard 폰트 CDN 로드 실패뿐이며, 실제 GitHub Pages 배포 환경에서는 발생하지 않습니다).
+
+**`.github/workflows/deploy-pages.yml`도 이번에 함께 고쳤습니다.** `site/dist/`는 빌드
+산출물이라 저장소에 커밋하지 않는데(`.gitignore`에 추가), 예전 워크플로는 `site/` 폴더를
+빌드 없이 그대로 GitHub Pages에 올리기만 했습니다 — 그대로 두면 배포된 사이트가
+`site/dist/site/src/main.js`를 찾지 못해 빈 화면만 뜹니다. 그래서 배포 스텝 앞에
+`npm install` + `npm run build:site`를 추가해, push될 때마다 항상 새로 빌드한 뒤 올리도록
+바꿨습니다.
+
 ### 로컬 검증
 
 ```bash
 npm install
 npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(2,854) + timeseries(84) + optimize(62, 자체 검증) = 8,143건 전부 일치해야 통과
-npm run typecheck
+npm run typecheck     # lib/ + tests/golden/ (tsconfig.json)
+npm run build:site    # site/ 전체 빌드 (tsconfig.site.json) — lib/ + site/src/ 전부 strict 타입체크 포함
 ```
 
-`.github/workflows/golden.yml`이 `main` 브랜치에 push/PR 될 때마다 이 검증을 자동으로 돌립니다.
+`.github/workflows/golden.yml`이 `main` 브랜치에 push/PR 될 때마다 `test:golden`을 자동으로 돌립니다.
 
 ## 원본(`subscription-energy-optimizer`)과의 관계
 
@@ -226,12 +304,16 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
    다만 WASM 솔버를 들여오는 대신 두 CP-SAT 모델을 정확한 알고리즘으로 직접
    치환하는 쪽을 택했습니다(`lib/optimize.ts`, 판단 근거는 위 절 참고). 실제
    CP-SAT과의 최종 대조는 GitHub Actions에서 골든 캡처를 다시 돌려야 채워집니다.
-5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트) — 색상은 `design/PALETTE.md` 참고(따뜻한
-   노랑·주황 톤 + 민트 포인트, 폰트·레이아웃 구조는 PRAS-DER과 동일)
+5. ~~최종 UI 구현 (8개 탭, 18개 입력, 12개 차트)~~ — **완료** (`site/src/main.ts` +
+   `site/src/tabs/tab1.ts`~`tab8.ts`, 프레임워크·차트 라이브러리 없는 순수 TS + SVG. 색상은
+   `design/PALETTE.md` + `dataviz` 스킬 팔레트, 폰트·레이아웃 구조는 PRAS-DER과 동일)
 
-지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) + Stage 2(요금
-모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관 + build_tariff_monitor + daily/profiles
-압축 인코딩까지 전부) + Stage 4(변압기·행동계획 최적화 이관, `lib/optimize.ts`) 까지 완료된
-상태입니다. 남은 건 5(최종 UI)뿐입니다. 검증 총계: 8,143건(그중 62건은 ortools 없이도
-확인 가능한 자체 결정론성·경계조건 검증이고, 실제 CP-SAT 대조는 GitHub Actions에서 골든
-캡처를 다시 돌린 뒤 채워집니다).
+**이관이 5단계 전부 끝났습니다.** Stage 0(골든값 캡처, ortools 포함) + Stage 1(요금·구독
+계산 이관) + Stage 2(요금 모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관 +
+build_tariff_monitor + daily/profiles 압축 인코딩) + Stage 4(변압기·행동계획 최적화 이관,
+`lib/optimize.ts`) + Stage 5(최종 UI, `site/`) 까지 전부 완료된 상태입니다. `site/`는 이제
+Streamlit 서버 없이 그 자체로 완결된 정적 사이트입니다. 계산 검증 총계: 8,143건(그중 62건은
+ortools 없이도 확인 가능한 자체 결정론성·경계조건 검증이고, 실제 CP-SAT 대조는 GitHub
+Actions에서 골든 캡처를 다시 돌린 뒤 채워집니다 — 이미 한 번 돌려서 확인하셨다면 다시
+돌릴 필요 없습니다). UI 쪽은 Stage 5 절에 적은 3가지 의도적 차이(100가구 무작위 추출의
+PRNG, ZIP→CSV 2개, 그룹 수 슬라이더의 사전계산 6종)를 빼면 원본과 100% 동일합니다.

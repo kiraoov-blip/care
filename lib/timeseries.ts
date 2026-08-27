@@ -115,6 +115,28 @@ export function profileForCustomer(
 }
 
 /**
+ * 특정 (연도,월,일유형)의 시간대별 평균부하 배열을 반환한다 — 원본 T3 "월별 목표관리·제어"
+ * 화면의 `D["profiles"][(...)&(월==month)&...]sort_values("시간")`에 해당하는, 계절 평균이
+ * 아닌 "그 달 그대로"의 프로필. profileForCustomer(계절 평균, 원본 L296~299)와는 별개로
+ * Stage 5 UI에서 추가한 조회 경로일 뿐 계산 로직 자체는 없음(단순 인덱싱) — 골든 대조 대상
+ * 아님(profiles.json 원본 배열 값을 그대로 꺼내 쓸 뿐이므로 반올림 오차도 추가되지 않는다).
+ */
+export function monthlyProfileForCustomer(
+  dataset: ProfilesDataset,
+  customerId: string,
+  year: number,
+  month: number,
+  dayType: string
+): HourlyProfilePoint[] {
+  const arr = dataset.customers[customerId];
+  if (!arr) return [];
+  return dataset.hours.map((hour) => {
+    const idx = profileIndex(dataset, year, month, dayType, hour);
+    return { 시간: hour, 평균사용량_kWh: idx >= 0 ? arr[idx] : 0 };
+  });
+}
+
+/**
  * aggregate_portfolio_profile(profiles, ids, year, season, daytype) 이관 (원본 L302~307).
  * 고객별로 먼저 계절 평균(profileForCustomer와 동일)을 낸 뒤, 시간대별로 그
  * 고객들의 값을 합산해 포트폴리오 곡선을 만든다. `hours` 순서 그대로 반환한다
