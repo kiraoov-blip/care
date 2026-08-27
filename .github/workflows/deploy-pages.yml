@@ -1,12 +1,16 @@
 name: Deploy CARE to GitHub Pages
 
-# 이 저장소에는 두 종류의 내용이 함께 들어있다.
-#   site/   -> 실제로 배포되는 정적 페이지 (지금은 care-jeju-v30.streamlit.app 을 감싸는 얇은 iframe 래퍼)
+# 이 저장소에는 여러 종류의 내용이 함께 들어있다.
+#   site/   -> 실제로 배포되는 정적 페이지 (Stage 5 완료 — 브라우저에서 직접 계산하는 완결된 사이트)
+#   lib/    -> site/가 실행하는 계산 로직의 TypeScript 소스 (골든 테스트로 검증됨)
 #   legacy/ -> 이관 작업용 원본 파이썬 소스 + 데이터 사본 (배포 대상 아님, golden 캡처용)
 #   golden/ -> 원본 계산 결과를 고정해둔 기준값 (이관 검증용)
 #
-# GitHub Pages 에는 site/ 안의 내용만 올린다. legacy/ 의 12MB 데이터가
-# 실제 서비스 페이지에 함께 배포되는 것을 막기 위함이다.
+# site/index.html이 로드하는 site/dist/**/*.js는 lib/**/*.ts + site/src/**/*.ts를 tsc로
+# 컴파일한 빌드 산출물이라 저장소에 커밋하지 않는다(.gitignore) — 그래서 배포 전에 항상
+# `npm run build:site`로 새로 만든 뒤, GitHub Pages에는 site/ 안의 내용(방금 만든
+# site/dist/ 포함)만 올린다. legacy/ 의 12MB 데이터가 실제 서비스 페이지에 함께 배포되는
+# 것을 막기 위함이다.
 
 on:
   push:
@@ -33,6 +37,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: 사이트 빌드 (lib/*.ts + site/src/*.ts → site/dist/*.js)
+        run: npm run build:site
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
