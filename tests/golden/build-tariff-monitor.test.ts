@@ -2,13 +2,13 @@
 // 최종 테이블) 골든 검증.
 //
 // lib/tariff-monitor.ts 의 buildAnnualMonitor/buildMonthlyMonitor 가
-// data/customers.json + data/clusters.json(enrichScores 입력) + data/monthly.json
-// (이미 배포된 정적 데이터)과, golden/care-reference.json 에만 있는 4명 표본의
-// daily 이력을 합쳐 원본과 정확히 같은 결과를 내는지 대조한다.
+// data/customers.json + data/clusters.json(enrichScores 입력) + data/monthly.json +
+// data/daily.json(모두 이미 배포된 정적 데이터)만으로 원본과 정확히 같은 결과를
+// 내는지 대조한다.
 //
-// "연간 전체" 분기는 monthly만 있으면 계산되므로 712명 전원 × 2개년을 전부 대조하고,
-// "월중 모니터링" 분기는 daily 전체(52만행)가 아직 정적 JSON으로 배포되지 않아
-// golden 캡처에 함께 실어둔 표본 4명분만 대조한다(README의 "아직 남은 것" 참고).
+// "연간 전체"/"월중 모니터링" 두 분기 모두 712명 전원을 대조한다 — data/daily.json이
+// 이번 업데이트부터 52만행 전체를 압축 인코딩해 배포하므로(scripts/export_data.py,
+// lib/timeseries.ts), 예전처럼 표본 몇 명만 검증할 필요가 없어졌다.
 //
 // 실행: npx tsx tests/golden/build-tariff-monitor.test.ts (또는 npm run test:golden)
 
@@ -22,6 +22,7 @@ import {
   buildMonthlyMonitor,
   type MonthlyRow,
 } from "../../lib/tariff-monitor.ts";
+import { decodeAllCustomerDaily, type DailyDataset } from "../../lib/timeseries.ts";
 import type { DailyRow } from "../../lib/forecast.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,7 @@ const customers: CustomerRow[] = JSON.parse(readFileSync(path.join(ROOT, "data",
 const clusters = JSON.parse(readFileSync(path.join(ROOT, "data", "clusters.json"), "utf-8"));
 const clusterWide: ClusterWideRow[] = clusters.wide;
 const monthly: MonthlyRow[] = JSON.parse(readFileSync(path.join(ROOT, "data", "monthly.json"), "utf-8"));
+const dailyDataset: DailyDataset = JSON.parse(readFileSync(path.join(ROOT, "data", "daily.json"), "utf-8"));
 
 const FEE = { basicFee: 84_900, basicInc: 450, premiumFee: 249_000, premiumInc: 1_000, overage: 300 };
 
@@ -88,11 +90,8 @@ for (const year of [2024, 2025] as const) {
   }
 }
 
-// ── 2. "월중 모니터링" 분기 — 표본 4명, 2025-07, cutoff=20, 두 요금제 기준 각각 ──
-const customerDaily = new Map<string, DailyRow[]>();
-for (const cid of c.monthly_sample_customer_ids as string[]) {
-  customerDaily.set(cid, c.monthly_sample_daily_rows[cid]);
-}
+// ── 2. "월중 모니터링" 분기 — 712명 전원, 2025-07, cutoff=20, 두 요금제 기준 각각 ──
+const customerDaily: Map<string, DailyRow[]> = decodeAllCustomerDaily(dailyDataset);
 
 for (const plan of ["기본형", "프리미엄형"] as const) {
   const result = sortByCid(

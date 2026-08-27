@@ -9,8 +9,11 @@ CARE 시뮬레이터를, PRAS-DER처럼 GitHub Pages 기반 정적 사이트로 
 site/     실제로 GitHub Pages에 배포되는 내용
 legacy/   원본 파이썬 소스 + 데이터 사본 (배포되지 않음, 골든값 캡처 전용)
 golden/   원본 계산 결과를 고정한 기준값 (이관 검증용)
+data/     legacy/를 한 번 계산해 브라우저용으로 내보낸 정적 JSON (scripts/export_data.py 산출물)
+scripts/  legacy/ → data/ 변환 스크립트
 lib/      TypeScript로 이관된 계산 로직 (Stage 1부터 여기에 쌓입니다)
 tests/golden/  lib/*.ts 가 golden/care-reference.json 과 정확히 같은 값을 내는지 대조하는 테스트
+design/   Stage 5 UI에 쓸 색상 팔레트 등 디자인 참고 문서
 ```
 
 ### site/ — 지금 당장 배포되는 것
@@ -113,22 +116,45 @@ Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의
 - `buildAnnualMonitor`: `data/monthly.json` + `enrichScores` 결과만으로 계산 가능해,
   712명 전원 × 2024/2025 두 해를 전부 골든 대조합니다.
 - `buildMonthlyMonitor`: 조회일까지의 실측 + `forecastMonthLongitudinal` 예측으로
-  당월 요금·알림단계까지 계산합니다. `daily`(52만행) 전체가 아직 정적 JSON으로 배포되지
-  않은 상태라, `tests/golden/build-tariff-monitor.test.ts`는 골든 캡처에 함께 실어둔
-  표본 4명분의 daily 이력으로 검증합니다 — 로직 자체는 실제 고객 데이터로 검증된
-  것이고, 남은 건 아래 `daily`/`profiles` 규모를 어떻게 압축 인코딩할지뿐입니다.
+  당월 요금·알림단계까지 계산합니다. 아래 `data/daily.json`이 나오면서 712명 전원 ×
+  2개 요금제(기본형/프리미엄형)를 전부 골든 대조합니다.
 
-`tests/golden/build-tariff-monitor.test.ts`가 위 두 함수를 대조해 총 1,438건을 검증합니다.
+`tests/golden/build-tariff-monitor.test.ts`가 위 두 함수를 대조해 총 2,854건을 검증합니다.
 
-**아직 남은 것**: `daily`/`profiles`(각 52만·82만 행) JSON 압축 인코딩이 남아있습니다 —
-고객ID·날짜를 반복 저장하지 않는 컬럼형 인코딩이 필요합니다. 이게 끝나야 실제 UI에서
-"월중 모니터링" 표를 712명 전원 대상으로 보여줄 수 있습니다(지금은 로직 검증만 끝난 상태).
+### data/daily.json · data/profiles.json · lib/timeseries.ts — daily/profiles 압축 인코딩
+
+Stage 2·3에서 미뤄뒀던 `daily`(52만행)·`profiles`(82만행) 압축 인코딩을 마쳤습니다.
+원본 두 테이블은 둘 다 빈 칸 없이 꽉 찬 격자입니다 — `daily`는 고객마다 정확히
+2024-01-01~2025-12-31의 731일이 하루도 안 빠지고 있고, `profiles`는 고객마다 정확히
+2개년×12개월×2일유형×24시간=1,152행이 있습니다(`scripts/export_data.py`에서 전수
+검증). 그래서 "고객ID·날짜/연·월·일유형·시간"을 매 행 반복 저장하는 대신, 그 축을
+한 번만 저장하고 고객별로는 그 축 순서에 맞춘 숫자 배열 하나만 저장했습니다 —
+`data/profiles.json`은 이 인코딩만으로 12.5MB → 4.8MB, `data/daily.json`은 (원본
+52만행을 naive하게 행 객체로 저장했다면 20MB를 넘었을 것을) 3.4MB로 나왔습니다.
+
+- `daily`의 "일유형" 컬럼은 원본 52만행 전체에서 예외 없이 "주말" 한 값뿐이었습니다
+  (데이터 자체의 특성이지 이관 중에 바꾼 값이 아닙니다 — `scripts/export_data.py`가
+  이 사실을 매번 다시 검증하고, 만약 미래에 원본 데이터가 바뀌어 더 이상 상수가
+  아니게 되면 export 스크립트가 assert로 실패하도록 해뒀습니다). 그래서 `data/daily.json`은
+  이 값을 행마다 넣지 않고 `dayTypeConst`로 한 번만 싣고, `lib/timeseries.ts`의
+  `decodeCustomerDaily`가 복원할 때 모든 행에 그대로 채워 넣습니다.
+- `profiles`의 평균사용량_kWh는 pandas `mean()`이 만든 배정밀도 실수라, 그대로 실으면
+  파일이 3배 가까이 커져서 소수 3자리(0.001kWh=1Wh 단위, 화면 표시엔 충분한 정밀도)로
+  반올림해 저장했습니다.
+- `lib/timeseries.ts`의 `profileForCustomer`/`aggregatePortfolioProfile`(원본 L296~307)도
+  함께 이관했습니다 — 고객 상세 화면의 시간대별 부하곡선, 포트폴리오 곡선에 쓰입니다.
+
+`tests/golden/timeseries.test.ts`가 (1) 디코더가 압축 인코딩을 원본과 정확히 같은 값으로
+복원하는지, (2) `forecastMonthLongitudinal`이 이 디코더를 통해서도 Stage 2와 같은 결과를
+내는지, (3) `profileForCustomer`/`aggregatePortfolioProfile`이 골든값과 일치하는지를
+검증해 총 84건을 확인합니다(2·3번은 소수 3자리 반올림으로 인한 최대 0.0005 오차를
+반올림 폭 안에서만 허용합니다 — 코드 주석 참고).
 
 ### 로컬 검증
 
 ```bash
 npm install
-npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(1,438) = 6,581건 전부 일치해야 통과
+npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(2,854) + timeseries(84) = 8,081건 전부 일치해야 통과
 npm run typecheck
 ```
 
@@ -158,12 +184,14 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
 2. ~~pandas 요금 모니터링 로직 → TypeScript 포팅~~ — **완료** (`lib/tariff-monitor.ts`, `lib/forecast.ts`, 548건 전부 일치)
 3. ~~군집분석 결과 반영 + 패턴안정성·수요관리우선점수 → TypeScript 포팅~~ — **완료**
    (`data/*.json` 정적 데이터 + `lib/enrich.ts`, 4,275건 전부 일치). ~~`build_tariff_monitor`~~도
-   이어서 **완료**(`buildAnnualMonitor`/`buildMonthlyMonitor`, 1,438건 전부 일치). `daily`/`profiles`
-   JSON 압축 인코딩만 다음 업데이트로 이월
+   이어서 **완료**(`buildAnnualMonitor`/`buildMonthlyMonitor`, 712명 전원 기준 2,854건 전부 일치).
+   ~~`daily`/`profiles` JSON 압축 인코딩~~도 **완료**(`data/daily.json`·`data/profiles.json` +
+   `lib/timeseries.ts`, 84건 전부 일치) — 이걸로 Stage 3에 딸린 후속 항목이 전부 끝났습니다.
 4. 변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체
 5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트) — 색상은 `design/PALETTE.md` 참고(따뜻한
    노랑·주황 톤 + 민트 포인트, 폰트·레이아웃 구조는 PRAS-DER과 동일)
 
 지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) + Stage 2(요금
-모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관 + build_tariff_monitor) 까지 완료된
-상태입니다. 검증 총계: 6,581건.
+모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관 + build_tariff_monitor + daily/profiles
+압축 인코딩까지 전부) 까지 완료된 상태입니다. 남은 건 4(OR-Tools)·5(최종 UI)뿐입니다.
+검증 총계: 8,081건.

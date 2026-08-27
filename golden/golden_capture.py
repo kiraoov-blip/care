@@ -415,30 +415,111 @@ def build_tariff_monitor_cases():
         )
         annual[str(year)] = df.sort_values("고객ID").to_dict("records")
 
-    sample_ids = daily["고객ID"].unique()[:4]
-    daily_subset = daily[daily["고객ID"].isin(sample_ids)]
+    # "월중 모니터링" 분기는 이번 업데이트부터 daily 전체(712명)로 캡처한다 — 이제
+    # data/daily.json이 52만행 전체를 압축 인코딩해 배포하므로(scripts/export_data.py),
+    # 예전처럼 golden에 표본 4명분 daily만 따로 실어둘 필요가 없다. TS 테스트는
+    # data/daily.json을 직접 읽어 712명 전원을 이 결과와 대조한다.
     monthly_case = {}
     for current_plan in ["기본형", "프리미엄형"]:
         df = call(
-            "build_tariff_monitor", daily_subset, monthly, enriched, cluster_col[2025],
+            "build_tariff_monitor", daily, monthly, enriched, cluster_col[2025],
             "월중 모니터링", 2025, 7, 20, current_plan, **_BILL_KW,
         )
         monthly_case[current_plan] = df.sort_values("고객ID").to_dict("records")
 
-    sample_daily = {
-        str(cid): daily[daily["고객ID"] == cid][["연도", "월", "일", "일유형", "일사용량_kWh"]].to_dict("records")
-        for cid in sample_ids
-    }
-
     return {
         "cluster_col": {str(k): v for k, v in cluster_col.items()},
         "annual": annual,
-        "monthly_sample_customer_ids": [str(c) for c in sample_ids],
-        "monthly_sample_daily_rows": sample_daily,
         "monthly": monthly_case,
     }
 
 capture("build_tariff_monitor_cases", build_tariff_monitor_cases)
+
+# ── 2.7. daily/profiles 압축 인코딩 무결성 (scripts/export_data.py 검증용) ──
+# scripts/export_data.py가 data/daily.json·data/profiles.json을 만들 때 쓴 것과
+# "같은 규칙"을, 여기서는 그 스크립트를 재사용하지 않고 원본 daily/profiles
+# DataFrame에서 독립적으로 다시 계산한다 — export_data.py 자기 자신과 대조하면
+# "내가 계산한 걸 나와 비교"하는 순환 검증이 되므로, 표본 4명만 원본에서 직접
+# 다시 뽑아 TS 디코더가 실제로 원본과 같은 값을 복원하는지 확인한다.
+def timeseries_integrity_cases():
+    data = call("load_data")
+    daily = data["daily"]
+    profiles = data["profiles"]
+
+    dates = sorted(daily["날짜"].dt.strftime("%Y-%m-%d").unique().tolist())
+    daytype_unique = sorted(daily["일유형"].unique().tolist())
+
+    sample_ids = daily["고객ID"].unique()[:4].tolist()
+    daily_by_customer = {}
+    for cid in sample_ids:
+        g = daily[daily["고객ID"] == cid].sort_values("날짜")
+        daily_by_customer[str(cid)] = g["일사용량_kWh"].tolist()
+
+    p_years, p_months, p_daytypes, p_hours = [2024, 2025], list(range(1, 13)), ["주중", "주말"], list(range(1, 25))
+    idx_of = {}
+    i = 0
+    for y in p_years:
+        for m in p_months:
+            for dt in p_daytypes:
+                for h in p_hours:
+                    idx_of[(y, m, dt, h)] = i
+                    i += 1
+    profiles_by_customer = {}
+    for cid in sample_ids:
+        arr = [0.0] * 1152
+        g = profiles[profiles["고객ID"] == cid]
+        for row in g.itertuples(index=False):
+            key = (int(row.연도), int(row.월), row.일유형, int(row.시간))
+            arr[idx_of[key]] = round(float(row.평균사용량_kWh), 3)
+        profiles_by_customer[str(cid)] = arr
+
+    return {
+        "date_count": len(dates),
+        "dates_first3": dates[:3],
+        "dates_last3": dates[-3:],
+        "daily_daytype_unique": daytype_unique,
+        "sample_customer_ids": [str(c) for c in sample_ids],
+        "daily_by_customer": daily_by_customer,
+        "profiles_by_customer": profiles_by_customer,
+    }
+
+capture("timeseries_integrity_cases", timeseries_integrity_cases)
+
+# ── 2.8. profile_for_customer / aggregate_portfolio_profile ────────
+def profile_for_customer_cases():
+    data = call("load_data")
+    profiles = data["profiles"]
+    sample_ids = profiles["고객ID"].unique()[:4].tolist()
+    out = []
+    for cid in sample_ids:
+        for year in (2024, 2025):
+            for season in ("봄가을", "여름", "겨울"):
+                for daytype in ("주중", "주말"):
+                    p = call("profile_for_customer", profiles, cid, year, season, daytype)
+                    out.append({
+                        "customer_id": str(cid), "year": year, "season": season, "daytype": daytype,
+                        "result": p.round(6).to_dict("records"),
+                    })
+    return out
+
+capture("profile_for_customer_cases", profile_for_customer_cases)
+
+def aggregate_portfolio_profile_cases():
+    data = call("load_data")
+    profiles = data["profiles"]
+    sample_ids = profiles["고객ID"].unique()[:15].tolist()
+    out = []
+    for year in (2024, 2025):
+        for season in ("여름", "겨울"):
+            for daytype in ("주중", "주말"):
+                agg = call("aggregate_portfolio_profile", profiles, sample_ids, year, season, daytype)
+                out.append({
+                    "customer_ids": [str(c) for c in sample_ids], "year": year, "season": season,
+                    "daytype": daytype, "result": [round(float(v), 6) for v in agg.tolist()],
+                })
+    return out
+
+capture("aggregate_portfolio_profile_cases", aggregate_portfolio_profile_cases)
 
 # ── 3. 최적화 (ortools 필요 — 없으면 unavailable로 표시) ────────────
 def transformer_optimization_cases():
