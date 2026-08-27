@@ -1,0 +1,1324 @@
+{
+  "_meta": {
+    "source_file": "streamlit_app_actual_tou_v30.py",
+    "app_version": "2026-07-21-actual-tou-v30.0"
+  },
+  "billing_cases": [
+    {
+      "month": 1,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 25430.0
+    },
+    {
+      "month": 1,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 40710.0
+    },
+    {
+      "month": 1,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 57910.0
+    },
+    {
+      "month": 1,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 58140.0
+    },
+    {
+      "month": 1,
+      "kwh": 201,
+      "residential_won": 32260.0,
+      "tou_won_default_share": 58310.0
+    },
+    {
+      "month": 1,
+      "kwh": 300,
+      "residential_won": 57760.0,
+      "tou_won_default_share": 79930.0
+    },
+    {
+      "month": 1,
+      "kwh": 399,
+      "residential_won": 83270.0,
+      "tou_won_default_share": 101500.0
+    },
+    {
+      "month": 1,
+      "kwh": 400,
+      "residential_won": 83530.0,
+      "tou_won_default_share": 101720.0
+    },
+    {
+      "month": 1,
+      "kwh": 401,
+      "residential_won": 90310.0,
+      "tou_won_default_share": 101900.0
+    },
+    {
+      "month": 1,
+      "kwh": 800,
+      "residential_won": 234790.0,
+      "tou_won_default_share": 188880.0
+    },
+    {
+      "month": 1,
+      "kwh": 999,
+      "residential_won": 306850.0,
+      "tou_won_default_share": 232230.0
+    },
+    {
+      "month": 1,
+      "kwh": 1000,
+      "residential_won": 307220.0,
+      "tou_won_default_share": 232450.0
+    },
+    {
+      "month": 1,
+      "kwh": 1001,
+      "residential_won": 308060.0,
+      "tou_won_default_share": 233300.0
+    },
+    {
+      "month": 1,
+      "kwh": 1500,
+      "residential_won": 729950.0,
+      "tou_won_default_share": 655190.0
+    },
+    {
+      "month": 4,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 23760.0
+    },
+    {
+      "month": 4,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 36680.0
+    },
+    {
+      "month": 4,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 51240.0
+    },
+    {
+      "month": 4,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 51440.0
+    },
+    {
+      "month": 4,
+      "kwh": 201,
+      "residential_won": 32260.0,
+      "tou_won_default_share": 51590.0
+    },
+    {
+      "month": 4,
+      "kwh": 300,
+      "residential_won": 57760.0,
+      "tou_won_default_share": 69870.0
+    },
+    {
+      "month": 4,
+      "kwh": 399,
+      "residential_won": 83270.0,
+      "tou_won_default_share": 88120.0
+    },
+    {
+      "month": 4,
+      "kwh": 400,
+      "residential_won": 83530.0,
+      "tou_won_default_share": 88300.0
+    },
+    {
+      "month": 4,
+      "kwh": 401,
+      "residential_won": 90310.0,
+      "tou_won_default_share": 88460.0
+    },
+    {
+      "month": 4,
+      "kwh": 800,
+      "residential_won": 234790.0,
+      "tou_won_default_share": 162050.0
+    },
+    {
+      "month": 4,
+      "kwh": 999,
+      "residential_won": 306850.0,
+      "tou_won_default_share": 198730.0
+    },
+    {
+      "month": 4,
+      "kwh": 1000,
+      "residential_won": 307220.0,
+      "tou_won_default_share": 198920.0
+    },
+    {
+      "month": 4,
+      "kwh": 1001,
+      "residential_won": 307570.0,
+      "tou_won_default_share": 199070.0
+    },
+    {
+      "month": 4,
+      "kwh": 1500,
+      "residential_won": 488260.0,
+      "tou_won_default_share": 291100.0
+    },
+    {
+      "month": 6,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 25430.0
+    },
+    {
+      "month": 6,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 40710.0
+    },
+    {
+      "month": 6,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 57910.0
+    },
+    {
+      "month": 6,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 58140.0
+    },
+    {
+      "month": 6,
+      "kwh": 201,
+      "residential_won": 32260.0,
+      "tou_won_default_share": 58310.0
+    },
+    {
+      "month": 6,
+      "kwh": 300,
+      "residential_won": 57760.0,
+      "tou_won_default_share": 79930.0
+    },
+    {
+      "month": 6,
+      "kwh": 399,
+      "residential_won": 83270.0,
+      "tou_won_default_share": 101500.0
+    },
+    {
+      "month": 6,
+      "kwh": 400,
+      "residential_won": 83530.0,
+      "tou_won_default_share": 101720.0
+    },
+    {
+      "month": 6,
+      "kwh": 401,
+      "residential_won": 90310.0,
+      "tou_won_default_share": 101900.0
+    },
+    {
+      "month": 6,
+      "kwh": 800,
+      "residential_won": 234790.0,
+      "tou_won_default_share": 188880.0
+    },
+    {
+      "month": 6,
+      "kwh": 999,
+      "residential_won": 306850.0,
+      "tou_won_default_share": 232230.0
+    },
+    {
+      "month": 6,
+      "kwh": 1000,
+      "residential_won": 307220.0,
+      "tou_won_default_share": 232450.0
+    },
+    {
+      "month": 6,
+      "kwh": 1001,
+      "residential_won": 307570.0,
+      "tou_won_default_share": 233300.0
+    },
+    {
+      "month": 6,
+      "kwh": 1500,
+      "residential_won": 488260.0,
+      "tou_won_default_share": 655190.0
+    },
+    {
+      "month": 7,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 25430.0
+    },
+    {
+      "month": 7,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 40710.0
+    },
+    {
+      "month": 7,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 57910.0
+    },
+    {
+      "month": 7,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 58140.0
+    },
+    {
+      "month": 7,
+      "kwh": 201,
+      "residential_won": 31370.0,
+      "tou_won_default_share": 58310.0
+    },
+    {
+      "month": 7,
+      "kwh": 300,
+      "residential_won": 46320.0,
+      "tou_won_default_share": 79930.0
+    },
+    {
+      "month": 7,
+      "kwh": 399,
+      "residential_won": 72600.0,
+      "tou_won_default_share": 101500.0
+    },
+    {
+      "month": 7,
+      "kwh": 400,
+      "residential_won": 72860.0,
+      "tou_won_default_share": 101720.0
+    },
+    {
+      "month": 7,
+      "kwh": 401,
+      "residential_won": 73120.0,
+      "tou_won_default_share": 101900.0
+    },
+    {
+      "month": 7,
+      "kwh": 800,
+      "residential_won": 218910.0,
+      "tou_won_default_share": 188880.0
+    },
+    {
+      "month": 7,
+      "kwh": 999,
+      "residential_won": 290970.0,
+      "tou_won_default_share": 232230.0
+    },
+    {
+      "month": 7,
+      "kwh": 1000,
+      "residential_won": 291320.0,
+      "tou_won_default_share": 232450.0
+    },
+    {
+      "month": 7,
+      "kwh": 1001,
+      "residential_won": 292170.0,
+      "tou_won_default_share": 233300.0
+    },
+    {
+      "month": 7,
+      "kwh": 1500,
+      "residential_won": 714060.0,
+      "tou_won_default_share": 655190.0
+    },
+    {
+      "month": 8,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 25430.0
+    },
+    {
+      "month": 8,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 40710.0
+    },
+    {
+      "month": 8,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 57910.0
+    },
+    {
+      "month": 8,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 58140.0
+    },
+    {
+      "month": 8,
+      "kwh": 201,
+      "residential_won": 31370.0,
+      "tou_won_default_share": 58310.0
+    },
+    {
+      "month": 8,
+      "kwh": 300,
+      "residential_won": 46320.0,
+      "tou_won_default_share": 79930.0
+    },
+    {
+      "month": 8,
+      "kwh": 399,
+      "residential_won": 72600.0,
+      "tou_won_default_share": 101500.0
+    },
+    {
+      "month": 8,
+      "kwh": 400,
+      "residential_won": 72860.0,
+      "tou_won_default_share": 101720.0
+    },
+    {
+      "month": 8,
+      "kwh": 401,
+      "residential_won": 73120.0,
+      "tou_won_default_share": 101900.0
+    },
+    {
+      "month": 8,
+      "kwh": 800,
+      "residential_won": 218910.0,
+      "tou_won_default_share": 188880.0
+    },
+    {
+      "month": 8,
+      "kwh": 999,
+      "residential_won": 290970.0,
+      "tou_won_default_share": 232230.0
+    },
+    {
+      "month": 8,
+      "kwh": 1000,
+      "residential_won": 291320.0,
+      "tou_won_default_share": 232450.0
+    },
+    {
+      "month": 8,
+      "kwh": 1001,
+      "residential_won": 292170.0,
+      "tou_won_default_share": 233300.0
+    },
+    {
+      "month": 8,
+      "kwh": 1500,
+      "residential_won": 714060.0,
+      "tou_won_default_share": 655190.0
+    },
+    {
+      "month": 10,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 23760.0
+    },
+    {
+      "month": 10,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 36680.0
+    },
+    {
+      "month": 10,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 51240.0
+    },
+    {
+      "month": 10,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 51440.0
+    },
+    {
+      "month": 10,
+      "kwh": 201,
+      "residential_won": 32260.0,
+      "tou_won_default_share": 51590.0
+    },
+    {
+      "month": 10,
+      "kwh": 300,
+      "residential_won": 57760.0,
+      "tou_won_default_share": 69870.0
+    },
+    {
+      "month": 10,
+      "kwh": 399,
+      "residential_won": 83270.0,
+      "tou_won_default_share": 88120.0
+    },
+    {
+      "month": 10,
+      "kwh": 400,
+      "residential_won": 83530.0,
+      "tou_won_default_share": 88300.0
+    },
+    {
+      "month": 10,
+      "kwh": 401,
+      "residential_won": 90310.0,
+      "tou_won_default_share": 88460.0
+    },
+    {
+      "month": 10,
+      "kwh": 800,
+      "residential_won": 234790.0,
+      "tou_won_default_share": 162050.0
+    },
+    {
+      "month": 10,
+      "kwh": 999,
+      "residential_won": 306850.0,
+      "tou_won_default_share": 198730.0
+    },
+    {
+      "month": 10,
+      "kwh": 1000,
+      "residential_won": 307220.0,
+      "tou_won_default_share": 198920.0
+    },
+    {
+      "month": 10,
+      "kwh": 1001,
+      "residential_won": 307570.0,
+      "tou_won_default_share": 199070.0
+    },
+    {
+      "month": 10,
+      "kwh": 1500,
+      "residential_won": 488260.0,
+      "tou_won_default_share": 291100.0
+    },
+    {
+      "month": 12,
+      "kwh": 50,
+      "residential_won": 8570.0,
+      "tou_won_default_share": 25430.0
+    },
+    {
+      "month": 12,
+      "kwh": 120,
+      "residential_won": 19130.0,
+      "tou_won_default_share": 40710.0
+    },
+    {
+      "month": 12,
+      "kwh": 199,
+      "residential_won": 31070.0,
+      "tou_won_default_share": 57910.0
+    },
+    {
+      "month": 12,
+      "kwh": 200,
+      "residential_won": 31220.0,
+      "tou_won_default_share": 58140.0
+    },
+    {
+      "month": 12,
+      "kwh": 201,
+      "residential_won": 32260.0,
+      "tou_won_default_share": 58310.0
+    },
+    {
+      "month": 12,
+      "kwh": 300,
+      "residential_won": 57760.0,
+      "tou_won_default_share": 79930.0
+    },
+    {
+      "month": 12,
+      "kwh": 399,
+      "residential_won": 83270.0,
+      "tou_won_default_share": 101500.0
+    },
+    {
+      "month": 12,
+      "kwh": 400,
+      "residential_won": 83530.0,
+      "tou_won_default_share": 101720.0
+    },
+    {
+      "month": 12,
+      "kwh": 401,
+      "residential_won": 90310.0,
+      "tou_won_default_share": 101900.0
+    },
+    {
+      "month": 12,
+      "kwh": 800,
+      "residential_won": 234790.0,
+      "tou_won_default_share": 188880.0
+    },
+    {
+      "month": 12,
+      "kwh": 999,
+      "residential_won": 306850.0,
+      "tou_won_default_share": 232230.0
+    },
+    {
+      "month": 12,
+      "kwh": 1000,
+      "residential_won": 307220.0,
+      "tou_won_default_share": 232450.0
+    },
+    {
+      "month": 12,
+      "kwh": 1001,
+      "residential_won": 308060.0,
+      "tou_won_default_share": 233300.0
+    },
+    {
+      "month": 12,
+      "kwh": 1500,
+      "residential_won": 729950.0,
+      "tou_won_default_share": 655190.0
+    }
+  ],
+  "subscription_cases": [
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "usage_kwh": 450.0,
+      "bill_won": 84900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "usage_kwh": 451.0,
+      "bill_won": 85100.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "usage_kwh": 500.0,
+      "bill_won": 94900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "usage_kwh": 650.0,
+      "bill_won": 124900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "usage_kwh": 1050.0,
+      "bill_won": 204900.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "usage_kwh": 1000.0,
+      "bill_won": 249000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "usage_kwh": 1001.0,
+      "bill_won": 249200.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "usage_kwh": 1050.0,
+      "bill_won": 259000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "usage_kwh": 1200.0,
+      "bill_won": 289000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "usage_kwh": 1600.0,
+      "bill_won": 369000.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "usage_kwh": 450.0,
+      "bill_won": 84900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "usage_kwh": 451.0,
+      "bill_won": 85200.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "usage_kwh": 500.0,
+      "bill_won": 99900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "usage_kwh": 650.0,
+      "bill_won": 144900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "usage_kwh": 1050.0,
+      "bill_won": 264900.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "usage_kwh": 1000.0,
+      "bill_won": 249000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "usage_kwh": 1001.0,
+      "bill_won": 249300.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "usage_kwh": 1050.0,
+      "bill_won": 264000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "usage_kwh": 1200.0,
+      "bill_won": 309000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "usage_kwh": 1600.0,
+      "bill_won": 429000.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 307.3,
+      "usage_kwh": 450.0,
+      "bill_won": 84900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 307.3,
+      "usage_kwh": 451.0,
+      "bill_won": 85207.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 307.3,
+      "usage_kwh": 500.0,
+      "bill_won": 100265.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 307.3,
+      "usage_kwh": 650.0,
+      "bill_won": 146360.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 307.3,
+      "usage_kwh": 1050.0,
+      "bill_won": 269280.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 307.3,
+      "usage_kwh": 1000.0,
+      "bill_won": 249000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 307.3,
+      "usage_kwh": 1001.0,
+      "bill_won": 249307.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 307.3,
+      "usage_kwh": 1050.0,
+      "bill_won": 264365.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 307.3,
+      "usage_kwh": 1200.0,
+      "bill_won": 310460.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 307.3,
+      "usage_kwh": 1600.0,
+      "bill_won": 433380.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "usage_kwh": 450.0,
+      "bill_won": 84900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "usage_kwh": 451.0,
+      "bill_won": 85300.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "usage_kwh": 500.0,
+      "bill_won": 104900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "usage_kwh": 650.0,
+      "bill_won": 164900.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "usage_kwh": 1050.0,
+      "bill_won": 324900.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "usage_kwh": 1000.0,
+      "bill_won": 249000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "usage_kwh": 1001.0,
+      "bill_won": 249400.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "usage_kwh": 1050.0,
+      "bill_won": 269000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "usage_kwh": 1200.0,
+      "bill_won": 329000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "usage_kwh": 1600.0,
+      "bill_won": 489000.0
+    }
+  ],
+  "inverse_subscription_cases": [
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "target_bill": 83900.0,
+      "max_kwh": 0.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "target_bill": 84900.0,
+      "max_kwh": 450.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "target_bill": 89900.0,
+      "max_kwh": 475.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 200,
+      "target_bill": 134900.0,
+      "max_kwh": 700.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "target_bill": 248000.0,
+      "max_kwh": 0.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "target_bill": 249000.0,
+      "max_kwh": 1000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "target_bill": 254000.0,
+      "max_kwh": 1025.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 200,
+      "target_bill": 299000.0,
+      "max_kwh": 1250.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "target_bill": 83900.0,
+      "max_kwh": 0.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "target_bill": 84900.0,
+      "max_kwh": 450.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "target_bill": 89900.0,
+      "max_kwh": 466.6666666666667
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 300,
+      "target_bill": 134900.0,
+      "max_kwh": 616.6666666666666
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "target_bill": 248000.0,
+      "max_kwh": 0.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "target_bill": 249000.0,
+      "max_kwh": 1000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "target_bill": 254000.0,
+      "max_kwh": 1016.6666666666666
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 300,
+      "target_bill": 299000.0,
+      "max_kwh": 1166.6666666666667
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "target_bill": 83900.0,
+      "max_kwh": 0.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "target_bill": 84900.0,
+      "max_kwh": 450.0
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "target_bill": 89900.0,
+      "max_kwh": 462.5
+    },
+    {
+      "plan": "기본형",
+      "overage_rate": 400,
+      "target_bill": 134900.0,
+      "max_kwh": 575.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "target_bill": 248000.0,
+      "max_kwh": 0.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "target_bill": 249000.0,
+      "max_kwh": 1000.0
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "target_bill": 254000.0,
+      "max_kwh": 1012.5
+    },
+    {
+      "plan": "프리미엄형",
+      "overage_rate": 400,
+      "target_bill": 299000.0,
+      "max_kwh": 1125.0
+    }
+  ],
+  "residential_component_breakdown": [
+    {
+      "kwh": 250.0,
+      "month": 1,
+      "breakdown": {
+        "요금계산 사용량(kWh)": 250.0,
+        "기본요금(원)": 1600.0,
+        "전력량요금(원)": 34730.0,
+        "연료비조정액(원)": 1250.0,
+        "기후환경요금(원)": 2250.0,
+        "전기요금계(원)": 39830.0,
+        "부가가치세(원)": 3983.0,
+        "전력산업기반기금(원)": 1070.0,
+        "최종 청구액(원)": 44880.0
+      }
+    },
+    {
+      "kwh": 550.0,
+      "month": 7,
+      "breakdown": {
+        "요금계산 사용량(kWh)": 550.0,
+        "기본요금(원)": 7300.0,
+        "전력량요금(원)": 98920.0,
+        "연료비조정액(원)": 2750.0,
+        "기후환경요금(원)": 4950.0,
+        "전기요금계(원)": 113920.0,
+        "부가가치세(원)": 11392.0,
+        "전력산업기반기금(원)": 3070.0,
+        "최종 청구액(원)": 128380.0
+      }
+    },
+    {
+      "kwh": 1200.0,
+      "month": 8,
+      "breakdown": {
+        "요금계산 사용량(kWh)": 1200.0,
+        "기본요금(원)": 7300.0,
+        "전력량요금(원)": 384445.0,
+        "연료비조정액(원)": 6000.0,
+        "기후환경요금(원)": 10800.0,
+        "전기요금계(원)": 408545.0,
+        "부가가치세(원)": 40855.0,
+        "전력산업기반기금(원)": 11030.0,
+        "최종 청구액(원)": 460430.0
+      }
+    }
+  ],
+  "rounding_cases": {
+    "round_half_up": {
+      "0.5": 1,
+      "1.5": 2,
+      "2.5": 3,
+      "10.4": 10,
+      "10.5": 11,
+      "10.6": 11,
+      "-0.5": 0,
+      "123.456": 123,
+      "9999.999": 10000
+    },
+    "truncate_won": {
+      "0.5": 0,
+      "1.5": 1,
+      "2.5": 2,
+      "10.4": 10,
+      "10.5": 10,
+      "10.6": 10,
+      "-0.5": 0,
+      "123.456": 123,
+      "9999.999": 9999
+    },
+    "truncate_10won": {
+      "0.5": 0,
+      "1.5": 0,
+      "2.5": 0,
+      "10.4": 10,
+      "10.5": 10,
+      "10.6": 10,
+      "-0.5": 0,
+      "123.456": 120,
+      "9999.999": 9990
+    },
+    "billed_kwh": {
+      "0.0": 0,
+      "0.4": 0,
+      "0.5": 1,
+      "0.6": 1,
+      "199.9": 200,
+      "200.0": 200
+    }
+  },
+  "data_and_clusters": {
+    "customers_row_count": 712,
+    "customers_columns": [
+      "15일예측_MAE_kWh",
+      "15일예측_MAPE",
+      "15일예측_오차10%이내",
+      "15일예측_평가월수",
+      "15일예측_평균편향_kWh",
+      "2024_0사용일수",
+      "2024_TOU대비최대절감원",
+      "2024_경부하비중",
+      "2024_관측일수",
+      "2024_구독 기본형_연간요금원",
+      "2024_구독 프리미엄형_연간요금원",
+      "2024_군집",
+      "2024_동계민감도",
+      "2024_부하율",
+      "2024_시간값완전도",
+      "2024_연간사용량_kWh",
+      "2024_월변동계수",
+      "2024_월평균_kWh",
+      "2024_일반 주택용_연간요금원",
+      "2024_제주 TOU(3kW)_연간요금원",
+      "2024_주말일평균_kWh",
+      "2024_주말주중비",
+      "2024_주중일평균_kWh",
+      "2024_중간부하비중",
+      "2024_최대부하비중",
+      "2024_최대시간사용량_kWh",
+      "2024_최저요금원",
+      "2024_추천요금제",
+      "2024_하계민감도",
+      "2025_0사용일수",
+      "2025_TOU대비최대절감원",
+      "2025_경부하비중",
+      "2025_관측일수",
+      "2025_구독 기본형_연간요금원",
+      "2025_구독 프리미엄형_연간요금원",
+      "2025_군집",
+      "2025_동계민감도",
+      "2025_부하율",
+      "2025_시간값완전도",
+      "2025_연간사용량_kWh",
+      "2025_월변동계수",
+      "2025_월평균_kWh",
+      "2025_일반 주택용_연간요금원",
+      "2025_제주 TOU(3kW)_연간요금원",
+      "2025_주말일평균_kWh",
+      "2025_주말주중비",
+      "2025_주중일평균_kWh",
+      "2025_중간부하비중",
+      "2025_최대부하비중",
+      "2025_최대시간사용량_kWh",
+      "2025_최저요금원",
+      "2025_추천요금제",
+      "2025_하계민감도",
+      "20일예측_MAE_kWh",
+      "20일예측_MAPE",
+      "20일예측_오차10%이내",
+      "20일예측_평가월수",
+      "20일예측_평균편향_kWh",
+      "경부하비중_증감",
+      "고객ID",
+      "군집유지여부",
+      "동계민감도_증감",
+      "부하율_증감",
+      "연간사용량증감_kWh",
+      "연간사용량증감률",
+      "주말주중비_증감",
+      "중간부하비중_증감",
+      "최대부하비중_증감",
+      "추천요금제유지여부",
+      "하계민감도_증감"
+    ],
+    "cluster_names_used": [
+      "그룹 1 · 동계민감·변동형",
+      "그룹 2 · 하계둔감·규칙형",
+      "그룹 3 · 주말집중·최대부하집중형",
+      "그룹 4 · 하계민감·동계둔감형",
+      "그룹 5 · 주간집중·최대부하집중형",
+      "그룹 6 · 중간부하낮음·야간집중형",
+      "그룹 7 · 평탄·고사용형",
+      "그룹 8 · 고피크·첨두형"
+    ],
+    "cluster_counts_by_year": [
+      {
+        "연도": 2024,
+        "군집": "그룹 1 · 동계민감·변동형",
+        "고객수": 16
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 2 · 하계둔감·규칙형",
+        "고객수": 85
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 3 · 주말집중·최대부하집중형",
+        "고객수": 88
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 4 · 하계민감·동계둔감형",
+        "고객수": 121
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 5 · 주간집중·최대부하집중형",
+        "고객수": 139
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 6 · 중간부하낮음·야간집중형",
+        "고객수": 61
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 7 · 평탄·고사용형",
+        "고객수": 120
+      },
+      {
+        "연도": 2024,
+        "군집": "그룹 8 · 고피크·첨두형",
+        "고객수": 82
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 1 · 동계민감·변동형",
+        "고객수": 16
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 2 · 하계둔감·규칙형",
+        "고객수": 98
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 3 · 주말집중·최대부하집중형",
+        "고객수": 88
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 4 · 하계민감·동계둔감형",
+        "고객수": 108
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 5 · 주간집중·최대부하집중형",
+        "고객수": 135
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 6 · 중간부하낮음·야간집중형",
+        "고객수": 65
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 7 · 평탄·고사용형",
+        "고객수": 130
+      },
+      {
+        "연도": 2025,
+        "군집": "그룹 8 · 고피크·첨두형",
+        "고객수": 72
+      }
+    ],
+    "wide_columns": [
+      "고객ID",
+      "2024군집",
+      "2025군집",
+      "군집유지여부"
+    ],
+    "wide_sample_first5": [
+      {
+        "고객ID": "M0001",
+        "2024군집": "그룹 5 · 주간집중·최대부하집중형",
+        "2025군집": "그룹 7 · 평탄·고사용형",
+        "군집유지여부": "이동"
+      },
+      {
+        "고객ID": "M0003",
+        "2024군집": "그룹 1 · 동계민감·변동형",
+        "2025군집": "그룹 2 · 하계둔감·규칙형",
+        "군집유지여부": "이동"
+      },
+      {
+        "고객ID": "M0006",
+        "2024군집": "그룹 7 · 평탄·고사용형",
+        "2025군집": "그룹 7 · 평탄·고사용형",
+        "군집유지여부": "유지"
+      },
+      {
+        "고객ID": "M0008",
+        "2024군집": "그룹 5 · 주간집중·최대부하집중형",
+        "2025군집": "그룹 5 · 주간집중·최대부하집중형",
+        "군집유지여부": "유지"
+      },
+      {
+        "고객ID": "M0009",
+        "2024군집": "그룹 4 · 하계민감·동계둔감형",
+        "2025군집": "그룹 4 · 하계민감·동계둔감형",
+        "군집유지여부": "유지"
+      }
+    ],
+    "transition_row_count": 56,
+    "enriched_sample_first5_customer_ids": [
+      "M0001",
+      "M0003",
+      "M0006",
+      "M0008",
+      "M0009"
+    ],
+    "enriched_columns_added": [
+      "2024군집",
+      "2025군집",
+      "구조변화신호",
+      "군집유지여부_동적",
+      "수요관리우선점수",
+      "패턴안정성점수"
+    ],
+    "enriched_구조변화신호_counts": {
+      "안정": 370,
+      "사용패턴 그룹 이동": 130,
+      "추천요금제 변경": 70,
+      "사용량 20% 이상 감소": 50,
+      "그룹·요금제 동시변경": 47,
+      "사용량 20% 이상 증가": 45
+    },
+    "enriched_패턴안정성점수_first5": [
+      81.6979,
+      58.7696,
+      87.5677,
+      94.325,
+      93.7784
+    ],
+    "enriched_수요관리우선점수_first5": [
+      67.3736,
+      35.1475,
+      46.1236,
+      56.4045,
+      53.0829
+    ]
+  },
+  "transformer_optimization_cases": {
+    "_status": "unavailable: ortools not installed in this environment (stub active)"
+  },
+  "action_optimization_cases": {
+    "_status": "unavailable: ortools not installed in this environment (stub active)"
+  },
+  "_errors": {}
+}
