@@ -1314,11 +1314,168 @@
       53.0829
     ]
   },
-  "transformer_optimization_cases": {
-    "_status": "unavailable: ortools not installed in this environment (stub active)"
-  },
-  "action_optimization_cases": {
-    "_status": "unavailable: ortools not installed in this environment (stub active)"
-  },
+  "transformer_optimization_cases": [
+    {
+      "profile": "flat_no_overload",
+      "limit_ratio": 0.8,
+      "participation": 0.5,
+      "peak_before": 10.0,
+      "peak_after": 9.7,
+      "shifted": 0.0,
+      "reduced": 7.199999999999999,
+      "overload_before": 48.0,
+      "overload_after": 40.79999999999998,
+      "status": "과부하 완화·잔여 초과 존재"
+    },
+    {
+      "profile": "flat_no_overload",
+      "limit_ratio": 0.8,
+      "participation": 1.0,
+      "peak_before": 10.0,
+      "peak_after": 9.4,
+      "shifted": 0.0,
+      "reduced": 14.399999999999999,
+      "overload_before": 48.0,
+      "overload_after": 33.60000000000001,
+      "status": "과부하 완화·잔여 초과 존재"
+    },
+    {
+      "profile": "flat_no_overload",
+      "limit_ratio": 1.0,
+      "participation": 0.5,
+      "peak_before": 10.0,
+      "peak_after": 10.0,
+      "shifted": 0.0,
+      "reduced": 0.0,
+      "overload_before": 0.0,
+      "overload_after": 0.0,
+      "status": "제어 불필요"
+    },
+    {
+      "profile": "flat_no_overload",
+      "limit_ratio": 1.0,
+      "participation": 1.0,
+      "peak_before": 10.0,
+      "peak_after": 10.0,
+      "shifted": 0.0,
+      "reduced": 0.0,
+      "overload_before": 0.0,
+      "overload_after": 0.0,
+      "status": "제어 불필요"
+    },
+    {
+      "profile": "evening_peak_overload",
+      "limit_ratio": 0.8,
+      "participation": 0.5,
+      "peak_before": 24.0,
+      "peak_after": 21.6,
+      "shifted": 5.63,
+      "reduced": 2.07,
+      "overload_before": 12.199999999999989,
+      "overload_after": 4.499999999999993,
+      "status": "과부하 완화·잔여 초과 존재"
+    },
+    {
+      "profile": "evening_peak_overload",
+      "limit_ratio": 0.8,
+      "participation": 1.0,
+      "peak_before": 24.0,
+      "peak_after": 19.2,
+      "shifted": 10.18,
+      "reduced": 2.02,
+      "overload_before": 12.199999999999989,
+      "overload_after": 0.0,
+      "status": "운전한도 충족"
+    },
+    {
+      "profile": "evening_peak_overload",
+      "limit_ratio": 1.0,
+      "participation": 0.5,
+      "peak_before": 24.0,
+      "peak_after": 24.0,
+      "shifted": 0.0,
+      "reduced": 0.0,
+      "overload_before": 0.0,
+      "overload_after": 0.0,
+      "status": "제어 불필요"
+    },
+    {
+      "profile": "evening_peak_overload",
+      "limit_ratio": 1.0,
+      "participation": 1.0,
+      "peak_before": 24.0,
+      "peak_after": 24.0,
+      "shifted": 0.0,
+      "reduced": 0.0,
+      "overload_before": 0.0,
+      "overload_after": 0.0,
+      "status": "제어 불필요"
+    }
+  ],
+  "action_optimization_cases": [
+    {
+      "required_kwh": 50,
+      "mode": "편의 우선",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 50,
+      "mode": "균형",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 50,
+      "mode": "목표달성 우선",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 150,
+      "mode": "편의 우선",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 150,
+      "mode": "균형",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 150,
+      "mode": "목표달성 우선",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 400,
+      "mode": "편의 우선",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 400,
+      "mode": "균형",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    },
+    {
+      "required_kwh": 400,
+      "mode": "목표달성 우선",
+      "gross": 22.32,
+      "effective": 19.162799999999997,
+      "row_count": 3
+    }
+  ],
   "_errors": {}
 }
