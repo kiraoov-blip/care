@@ -262,6 +262,23 @@ Pretendard 폰트 CDN 로드 실패뿐이며, 실제 GitHub Pages 배포 환경�
 `npm install` + `npm run build:site`를 추가해, push될 때마다 항상 새로 빌드한 뒤 올리도록
 바꿨습니다.
 
+**실제 배포 후 발견된 버그 하나를 더 고쳤습니다**: `upload-pages-artifact`가 `path: ./site`로
+`site/` 폴더 하나만 GitHub Pages에 올리는데, `data/`(customers.json 등 실제 데이터)는
+저장소 루트에 있고 `site/` 안에는 없습니다. `site/src/data.ts`가 원래 `"../data"`(site/index.html
+기준 한 단계 위)로 그 데이터를 가리켰는데, 로컬 샌드박스에서는 저장소 루트째로 서버를
+띄워 테스트했기 때문에 이 문제를 못 잡았습니다 — 실제 GitHub Pages에는 `site/`만 올라가니
+`../data`가 배포 루트보다 한 단계 더 위로 나가버려 `customers.json (404)`로 실패했습니다.
+고친 내용:
+
+- `site/src/data.ts`의 `DATA_BASE`를 `"../data"` → `"./data"`로 변경(site/ 안에서 찾도록).
+- `deploy-pages.yml`에 `cp -r data site/data` 스텝을 빌드 다음·업로드 전에 추가해, 배포
+  직전에 `data/`를 `site/data/`로 복사해 넣습니다(이 복사본은 커밋하지 않음 — `.gitignore`에
+  `site/data/` 추가).
+- 로컬에서도 실제 배포와 동일한 구조로 미리보기할 수 있게 `npm run preview:site`(빌드 +
+  데이터 복사 + `site/`만 떼어 로컬 서버 실행)를 추가했습니다. 이번엔 실제로 `site/` 폴더
+  **하나만** 떼어 로컬 서버로 띄워서(저장소 루트 전체가 아니라) GitHub Pages와 똑같은
+  조건으로 재확인했고, 데이터 로드·8개 탭 전환 모두 정상 동작을 확인했습니다.
+
 ### 로컬 검증
 
 ```bash
@@ -269,6 +286,8 @@ npm install
 npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(2,854) + timeseries(84) + optimize(62, 자체 검증) = 8,143건 전부 일치해야 통과
 npm run typecheck     # lib/ + tests/golden/ (tsconfig.json)
 npm run build:site    # site/ 전체 빌드 (tsconfig.site.json) — lib/ + site/src/ 전부 strict 타입체크 포함
+npm run preview:site  # 빌드 + data/ → site/data/ 복사 + site/ 폴더만 localhost:8000 으로 서빙
+                       # (GitHub Pages와 똑같이 site/ 하나만 떼어서 확인 — 브라우저로 http://localhost:8000 접속)
 ```
 
 `.github/workflows/golden.yml`이 `main` 브랜치에 push/PR 될 때마다 `test:golden`을 자동으로 돌립니다.

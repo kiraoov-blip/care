@@ -114,8 +114,19 @@ export interface RawData {
 
 const CLUSTER_KS = [3, 4, 5, 6, 7, 8];
 
-/** DATA_BASE는 site/index.html이 있는 위치를 기준으로 한 상대경로("../data")다. */
-const DATA_BASE = "../data";
+/**
+ * DATA_BASE는 site/index.html이 있는 위치를 기준으로 한 상대경로다.
+ *
+ * GitHub Pages에는 저장소 전체가 아니라 site/ 폴더 하나만 업로드된다
+ * (.github/workflows/deploy-pages.yml의 upload-pages-artifact가 `path: ./site`).
+ * data/ 는 site/ 바깥(저장소 루트)에 있는 폴더라 "../data"로는 실제 배포본에서
+ * 절대 찾을 수 없다 — 배포 루트보다 한 단계 위로 나가버리기 때문이다(404 원인).
+ * 그래서 배포 워크플로가 업로드 직전에 data/ 를 site/data/ 로 복사해 두고,
+ * 여기서는 site/ 안에 있는 그 복사본을 "./data"로 가리킨다. 로컬에서 미리보기할
+ * 때도 마찬가지로 site/data/ 가 있어야 하므로, README의 로컬 검증 절차를 따르면
+ * (scripts/copy-data-for-preview.sh) 자동으로 준비된다.
+ */
+const DATA_BASE = "./data";
 
 let rawDataPromise: Promise<RawData> | null = null;
 
