@@ -4,7 +4,7 @@
   "type": "module",
   "description": "CARE(J-CARE) 시뮬레이터 GitHub 기반 이관 작업 저장소",
   "scripts": {
-    "test:golden": "tsx tests/golden/billing.test.ts && tsx tests/golden/tariff-monitor.test.ts",
+    "test:golden": "tsx tests/golden/billing.test.ts && tsx tests/golden/tariff-monitor.test.ts && tsx tests/golden/enrich.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

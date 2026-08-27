@@ -77,11 +77,40 @@ Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의
 로직 자체는 이미 실제 고객 데이터로 검증됐지만, 이 큰 두 테이블을 어떻게 압축 인코딩할지는 별도
 작업으로 남겨뒀습니다(고객ID·날짜를 반복 저장하지 않는 컬럼형 인코딩이 필요합니다).
 
+### data/ + lib/enrich.ts — Stage 3: 군집분석 결과 반영 + 패턴안정성·수요관리우선점수 이관
+
+`joint_dynamic_clusters`(kmeans 군집분석)는 TypeScript로 옮기지 않았습니다. 이 함수가 쓰는
+`np.random.default_rng(42)`는 numpy의 PCG64 비트제너레이터인데, 이걸 JS에서 비트 단위로
+그대로 재현하려면 PCG64 알고리즘 전체와 numpy 고유의 표본추출 방식까지 옮겨야 합니다. 그런데
+712명의 원본 데이터는 바뀌지 않으니 군집 결과도 항상 같습니다 — 브라우저에서 매번 다시
+클러스터링할 이유가 없다는 뜻이라, 대신 **`scripts/export_data.py`가 Python에서 한 번 계산해
+`data/clusters.json`으로 내보내고**, 그 결과를 입력받는 `enrich_scores`만 TypeScript로 이관했습니다
+(자세한 판단 근거는 `golden/golden_capture.py`의 `clustering_and_enrich_full` 주석 참고).
+
+- `scripts/export_data.py`: `customers`/`monthly`/군집분석 결과를 브라우저용 정적 JSON으로 내보내는
+  스크립트 (PRAS의 `scripts/extract-reference-data.py`와 같은 역할). 이번 업데이트에 이 스크립트가
+  만든 `data/customers.json`(712명 전체 컬럼), `data/monthly.json`(17,088행), `data/clusters.json`
+  (군집 배정·요약·전이표)도 함께 들어있습니다 — Stage 2에서 미뤄뒀던 "실제 배포용 JSON 데이터"가
+  이제 마련된 것입니다.
+- `lib/enrich.ts`의 `enrichScores`: `연간사용량증감률`·시간대별 비중 변화 등으로 **패턴안정성점수**를,
+  2025년 최대시간사용량·최대부하비중·연간사용량·계절민감도·예측오차의 백분위 순위(`percentileRank`,
+  pandas `rank(pct=True)`와 동일한 동률 평균 규칙)로 **수요관리우선점수**를, 군집 이동·요금제 변경
+  여부로 **구조변화신호**(안정/사용량 급증/급감/그룹 이동/요금제 변경/동시변경)를 계산합니다.
+
+`tests/golden/enrich.test.ts`가 `data/customers.json` + `data/clusters.json`을 실제 입력으로 넣어
+`enrichScores`를 돌리고, 712명 전원의 패턴안정성점수·수요관리우선점수·구조변화신호를
+`golden/care-reference.json`의 `clustering_and_enrich_full`(원본을 Python에서 그대로 돌린 712명
+전체 결과)과 하나하나 대조합니다 — 총 4,275건.
+
+**아직 남은 것**: `build_tariff_monitor`(원본 L800~833, "그룹"·패턴안정성점수·수요관리우선점수까지
+합쳐 화면에 뿌리는 최종 테이블)는 이제 필요한 재료(`enrichScores`)가 다 갖춰졌으니 다음 업데이트에서
+바로 이어 포팅합니다. `daily`/`profiles`(각 52만·82만 행) JSON 압축 인코딩도 여전히 남아있습니다.
+
 ### 로컬 검증
 
 ```bash
 npm install
-npm run test:golden   # billing(320건) + tariff-monitor(548건) 전부 일치해야 통과
+npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) = 5,143건 전부 일치해야 통과
 npm run typecheck
 ```
 
@@ -108,10 +137,13 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
 ## 다음 단계 (이관 5단계)
 
 1. ~~요금·구독 계산 함수 → TypeScript 포팅~~ — **완료** (`lib/tariff.ts`, 320건 전부 일치)
-2. ~~pandas 요금 모니터링 로직 → TypeScript 포팅~~ — **완료** (`lib/tariff-monitor.ts`, `lib/forecast.ts`, 548건 전부 일치). 단, `daily`/`profiles` 원본 CSV의 JSON 압축 인코딩과 `build_tariff_monitor`는 Stage 3 이후로 이월
-3. 군집분석(k-means) → TypeScript 포팅 (`joint_dynamic_clusters`, `enrich_scores`) — 완료되면 위에서 미룬 `build_tariff_monitor`도 마저 포팅
+2. ~~pandas 요금 모니터링 로직 → TypeScript 포팅~~ — **완료** (`lib/tariff-monitor.ts`, `lib/forecast.ts`, 548건 전부 일치)
+3. ~~군집분석 결과 반영 + 패턴안정성·수요관리우선점수 → TypeScript 포팅~~ — **완료**
+   (`data/*.json` 정적 데이터 + `lib/enrich.ts`, 4,275건 전부 일치). `build_tariff_monitor`와
+   `daily`/`profiles` JSON 압축 인코딩은 다음 업데이트로 이월
 4. 변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체
-5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트)
+5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트) — 색상은 `design/PALETTE.md` 참고(따뜻한
+   노랑·주황 톤, 폰트·레이아웃 구조는 PRAS-DER과 동일)
 
 지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) + Stage 2(요금
-모니터링·사용량 예측 이관) 까지 완료된 상태입니다.
+모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관) 까지 완료된 상태입니다. 검증 총계: 5,143건.

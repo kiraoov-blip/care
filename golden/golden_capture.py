@@ -211,6 +211,30 @@ def data_and_clusters():
 
 capture("data_and_clusters", data_and_clusters)
 
+# ── 2.4. 군집분석 전체 + enrich_scores 전체 (Stage 3 검증용) ─────────
+# kmeans_numpy는 np.random.default_rng(42)의 PCG64 비트제너레이터를 쓴다.
+# 이걸 JS에서 비트 단위로 재현하는 건 고정된 과거 데이터에 대해 아무 실익이
+# 없으므로(입력이 안 바뀌면 항상 같은 결과), 군집 결과 자체는 Python에서
+# 한 번 계산해 정적 데이터로 내보내고(scripts/export_data.py), enrich_scores
+# 만 TypeScript로 이관한다. 이 섹션은 그 판단이 맞는지 검증하기 위해
+# 712명 전원의 계산 결과를 전부 캡처한다(첫 5명만 보던 data_and_clusters와 달리).
+def clustering_and_enrich_full():
+    data = call("load_data")
+    customers = data["customers"]
+    stacked, summary, wide, transition = call("joint_dynamic_clusters", customers, 8)
+    enriched = call("enrich_scores", customers, wide)
+    return {
+        "wide_full": wide.to_dict("records"),
+        "transition_full": transition.to_dict("records"),
+        "summary_full": summary.round(6).to_dict("records"),
+        "enriched_패턴안정성점수_all": enriched["패턴안정성점수"].round(6).tolist(),
+        "enriched_수요관리우선점수_all": enriched["수요관리우선점수"].round(6).tolist(),
+        "enriched_구조변화신호_all": enriched["구조변화신호"].tolist(),
+        "enriched_고객ID_order": enriched["고객ID"].astype(str).tolist(),
+    }
+
+capture("clustering_and_enrich_full", clustering_and_enrich_full)
+
 # ── 2.5. 요금 모니터링 (monthly/customers 테이블, ortools 불필요) ────
 # Stage 2(pandas 파이프라인 → TS 이관) 검증용. 원본 함수 시그니처 그대로,
 # 사이드바 기본값(구독 기본형/프리미엄형, 초과단가 300원)을 고정해 호출한다.
