@@ -11,12 +11,23 @@
  * 그대로 지켜서 행 순서까지 원본과 일치시킨다 — 값뿐 아니라 순서도
  * tests/golden/tariff-monitor.test.ts 가 골든 기준값과 대조한다.
  *
- * build_tariff_monitor(원본 L800~833)는 이관하지 않았다: "그룹" 컬럼과
- * 패턴안정성점수·수요관리우선점수가 Stage 3(enrich_scores, 군집분석 이관)의
- * 산출물이라 아직 존재하지 않기 때문이다. Stage 3 완료 후 이어서 포팅한다.
+ * build_tariff_monitor(원본 L800~833)는 Stage 3에서 미뤄뒀던 걸 이번 업데이트에서
+ * 이어서 이관했다(README의 "다음 단계" 5단계 번호와는 무관 — 이건 그 3번 항목의
+ * 마무리다). 원본은 "연간 전체"/
+ * "월중 모니터링" 두 기간(period)에 따라 완전히 다른 컬럼·계산을 반환하는 하나의
+ * 함수였지만, 여기서는 타입을 분리해 buildAnnualMonitor / buildMonthlyMonitor
+ * 두 함수로 나눴다 — 원본의 두 if/else 분기와 1:1 대응되며 계산 로직은 동일하다.
+ *
+ * 원본의 cluster_col 파라미터(dict{2024:..,2025:..})는 조회 연도에 대응하는 "그룹"
+ * 컬럼명을 미리 계산해 넘기는 방식이었는데, enrich_scores(lib/enrich.ts) 산출물에서
+ * 그 컬럼명은 항상 `${year}군집`(예: "2024군집") 이므로 여기서는 year로부터 직접
+ * 계산한다 (골든 검증으로 이 매핑이 원본과 같다는 것도 확인했다 — 아래 buildAnnualMonitor/
+ * buildMonthlyMonitor의 주석 참고).
  */
 
 import { residentialBill, touBill, subscriptionBill, TOU_CONTRACT_KW } from "./tariff";
+import type { EnrichedCustomer } from "./enrich";
+import { forecastMonthLongitudinal, alertLevel, type DailyRow } from "./forecast";
 
 export const PLAN_ORDER = ["일반 주택용(저압)", "제주 TOU", "구독 기본형", "구독 프리미엄형"] as const;
 export type PlanName = (typeof PLAN_ORDER)[number];
@@ -77,7 +88,7 @@ export function monthlyBillMap(
 }
 
 // 파이썬 min(dict, key=dict.get) 과 동일: 동률이면 PLAN_ORDER상 먼저 나오는 쪽.
-function cheapestPlan(bills: Record<PlanName, number>): PlanName {
+export function cheapestPlan(bills: Record<PlanName, number>): PlanName {
   let best: PlanName = PLAN_ORDER[0];
   for (const p of PLAN_ORDER) if (bills[p] < bills[best]) best = p;
   return best;
@@ -274,7 +285,7 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
   // pandas groupby 기본값은 그룹 키를 정렬해서 반환하므로, (고객ID, 연도) 오름차순으로 집계한다.
   const annualMap = new Map<string, AnnualCustomerRow & { __sumUsage: number }>();
   for (const r of monthlyCustomer) {
-    const key = `${r.고객ID} ${r.연도}`;
+    const key = `${r.고객ID} ${r.연도}`;
     let a = annualMap.get(key);
     if (!a) {
       a = {
@@ -316,9 +327,9 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
 
   // ── monthly_customer 완성: annual의 연간추천요금제 merge + 일치 여부 ──
   const annualRecByKey = new Map<string, PlanName>();
-  for (const a of annual) annualRecByKey.set(`${a.고객ID} ${a.연도}`, a.연간추천요금제);
+  for (const a of annual) annualRecByKey.set(`${a.고객ID} ${a.연도}`, a.연간추천요금제);
   const monthlyCustomerFull: MonthlyCustomerRow[] = monthlyCustomer.map((r) => {
-    const annualRec = annualRecByKey.get(`${r.고객ID} ${r.연도}`) as PlanName;
+    const annualRec = annualRecByKey.get(`${r.고객ID} ${r.연도}`) as PlanName;
     return {
       ...r,
       연간추천요금제: annualRec,
@@ -364,7 +375,7 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
     const r2025 = m.get(2025);
     if (r2024 !== undefined && r2025 !== undefined) {
       if (r2024 === r2025) stableCount++;
-      const key = `${r2024} ${r2025}`;
+      const key = `${r2024} ${r2025}`;
       const existing = transitionCounts.get(key);
       if (existing) existing.count++;
       else transitionCounts.set(key, { rec2024: r2024, rec2025: r2025, count: 1 });
@@ -389,7 +400,7 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
   // ── monthly_summary: (연도 오름차순 × 월 1~12 × PLAN_ORDER) 전 조합, 0으로 채움 ──
   const monthlyCountByKey = new Map<string, number>();
   for (const r of monthlyCustomerFull) {
-    const key = `${r.연도} ${r.월} ${r.월별추천요금제}`;
+    const key = `${r.연도} ${r.월} ${r.월별추천요금제}`;
     monthlyCountByKey.set(key, (monthlyCountByKey.get(key) ?? 0) + 1);
   }
   const uniqueCustomerCount = new Set(monthlyCustomerFull.map((r) => r.고객ID)).size;
@@ -398,7 +409,7 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
   for (const year of monthlyYears) {
     for (let month = 1; month <= 12; month++) {
       for (const plan of PLAN_ORDER) {
-        const count = monthlyCountByKey.get(`${year} ${month} ${plan}`) ?? 0;
+        const count = monthlyCountByKey.get(`${year} ${month} ${plan}`) ?? 0;
         monthlySummary.push({
           연도: year,
           월: month,
@@ -414,7 +425,7 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
   // (이 데이터셋에서 모든 고객×월 조합이 두 해 모두 존재한다는 전제는 annual_stability와 동일)
   const byCustomerMonth = new Map<string, Map<number, PlanName>>();
   for (const r of monthlyCustomerFull) {
-    const key = `${r.고객ID} ${r.월}`;
+    const key = `${r.고객ID} ${r.월}`;
     if (!byCustomerMonth.has(key)) byCustomerMonth.set(key, new Map());
     byCustomerMonth.get(key)!.set(r.연도, r.월별추천요금제);
   }
@@ -441,4 +452,159 @@ export function dynamicTariffAnalysis(monthly: MonthlyRow[], fee: FeeParams): Dy
     monthlyStability,
     monthlySummary,
   };
+}
+
+// ── build_tariff_monitor, "연간 전체" 분기 (원본 L805~816) ──────────────
+export interface AnnualMonitorRow {
+  고객ID: string;
+  그룹: string;
+  "연간사용량(kWh)": number;
+  "월평균사용량(kWh)": number;
+  "일반주택용(원)": number;
+  "제주TOU(원)": number;
+  "기본형(원)": number;
+  "프리미엄형(원)": number;
+  추천요금제: PlanName;
+  "TOU대비절감(원)": number;
+  "기본형제공량사용률(%)": number;
+  "프리미엄형제공량사용률(%)": number;
+  "2024→2025증감률(%)": number;
+  패턴안정성점수: number;
+  수요관리우선점수: number;
+}
+
+/**
+ * `monthly[monthly.연도===year]`를 고객ID로 묶어(원본의 `groupby("고객ID",sort=False)`와
+ * 같은 순서 — monthly 배열에 처음 등장하는 순서) 연간 청구액·추천요금제·패턴 점수를 계산한다.
+ * `enriched`에 없는 고객(원본의 `cid not in cust_lookup.index`)은 건너뛴다.
+ */
+export function buildAnnualMonitor(
+  monthly: MonthlyRow[],
+  enriched: Map<string, EnrichedCustomer>,
+  year: number,
+  fee: FeeParams
+): AnnualMonitorRow[] {
+  const clusterCol = `${year}군집` as "2024군집" | "2025군집";
+  const order: string[] = [];
+  const groups = new Map<string, MonthlyRow[]>();
+  for (const r of monthly) {
+    if (r.연도 !== year) continue;
+    if (!groups.has(r.고객ID)) {
+      groups.set(r.고객ID, []);
+      order.push(r.고객ID);
+    }
+    groups.get(r.고객ID)!.push(r);
+  }
+
+  const rows: AnnualMonitorRow[] = [];
+  for (const cid of order) {
+    const c = enriched.get(cid);
+    if (!c) continue;
+    const g = groups.get(cid)!;
+    const bills = annualBillMap(g, fee);
+    const usage = g.reduce((s, r) => s + r.사용량_kWh, 0);
+    const rec = cheapestPlan(bills);
+    rows.push({
+      고객ID: cid,
+      그룹: String(c[clusterCol] ?? ""),
+      "연간사용량(kWh)": usage,
+      "월평균사용량(kWh)": usage / 12,
+      "일반주택용(원)": bills["일반 주택용(저압)"],
+      "제주TOU(원)": bills["제주 TOU"],
+      "기본형(원)": bills["구독 기본형"],
+      "프리미엄형(원)": bills["구독 프리미엄형"],
+      추천요금제: rec,
+      "TOU대비절감(원)": Math.max(bills["제주 TOU"] - bills[rec], 0),
+      "기본형제공량사용률(%)": (usage / Math.max(fee.basicInc * 12, 1e-9)) * 100,
+      "프리미엄형제공량사용률(%)": (usage / Math.max(fee.premiumInc * 12, 1e-9)) * 100,
+      "2024→2025증감률(%)": Number(c.연간사용량증감률) * 100,
+      패턴안정성점수: Number(c.패턴안정성점수),
+      수요관리우선점수: Number(c.수요관리우선점수),
+    });
+  }
+  return rows;
+}
+
+// ── build_tariff_monitor, "월중 모니터링" 분기 (원본 L817~832) ──────────
+export interface MonthlyMonitorRow {
+  고객ID: string;
+  그룹: string;
+  "현재누적(kWh)": number;
+  "남은정액량(kWh)": number;
+  "월말예상(kWh)": number;
+  "예측하한(kWh)": number;
+  "예측상한(kWh)": number;
+  "실제월사용량(kWh)": number;
+  "일반주택용(원)": number;
+  "제주TOU(원)": number;
+  "기본형(원)": number;
+  "프리미엄형(원)": number;
+  추천요금제: PlanName;
+  "TOU대비절감(원)": number;
+  "기본형제공량사용률(%)": number;
+  "프리미엄형제공량사용률(%)": number;
+  알림단계: string;
+  "예측오차(%)": number;
+  패턴안정성점수: number;
+  수요관리우선점수: number;
+}
+
+/**
+ * `customerDaily`는 원본의 `daily.groupby("고객ID",sort=False)` 결과에 해당한다 —
+ * 각 고객의 "전체" 연도별 일별 이력(해당 연/월만이 아니라, 예측에 필요한 전년 동월분까지
+ * 포함한 전체)을 키로 갖는 맵이어야 한다. `monthly`는 연도 필터 없이 통째로 넘겨도 되고
+ * (원본처럼) 이미 (year,month)로 필터된 것을 넘겨도 결과는 같다 — 내부에서 다시 필터한다.
+ * 해당 (year,month)에 일별 기록이 없는 고객은 건너뛴다(원본의 `dd.groupby` 필터와 동치).
+ */
+export function buildMonthlyMonitor(
+  customerDaily: Map<string, DailyRow[]>,
+  monthly: MonthlyRow[],
+  enriched: Map<string, EnrichedCustomer>,
+  year: number,
+  month: number,
+  cutoffDay: number,
+  currentPlan: "기본형" | "프리미엄형",
+  fee: FeeParams
+): MonthlyMonitorRow[] {
+  const clusterCol = `${year}군집` as "2024군집" | "2025군집";
+  const monthlyByCustomer = new Map<string, MonthlyRow>();
+  for (const r of monthly) {
+    if (r.연도 === year && r.월 === month) monthlyByCustomer.set(r.고객ID, r);
+  }
+  const inc = currentPlan === "기본형" ? fee.basicInc : fee.premiumInc;
+
+  const rows: MonthlyMonitorRow[] = [];
+  for (const [cid, dailyRows] of customerDaily) {
+    const c = enriched.get(cid);
+    const mrow = monthlyByCustomer.get(cid);
+    if (!c || !mrow) continue;
+    if (!dailyRows.some((r) => r.연도 === year && r.월 === month)) continue;
+
+    const f = forecastMonthLongitudinal(dailyRows, year, month, cutoffDay);
+    const bills = monthlyBillMap(f.forecast, month, mrow, fee);
+    const rec = cheapestPlan(bills);
+    rows.push({
+      고객ID: cid,
+      그룹: String(c[clusterCol] ?? ""),
+      "현재누적(kWh)": f.current,
+      "남은정액량(kWh)": Math.max(inc - f.current, 0),
+      "월말예상(kWh)": f.forecast,
+      "예측하한(kWh)": f.lower,
+      "예측상한(kWh)": f.upper,
+      "실제월사용량(kWh)": f.actual,
+      "일반주택용(원)": bills["일반 주택용(저압)"],
+      "제주TOU(원)": bills["제주 TOU"],
+      "기본형(원)": bills["구독 기본형"],
+      "프리미엄형(원)": bills["구독 프리미엄형"],
+      추천요금제: rec,
+      "TOU대비절감(원)": Math.max(bills["제주 TOU"] - bills[rec], 0),
+      "기본형제공량사용률(%)": (f.forecast / Math.max(fee.basicInc, 1e-9)) * 100,
+      "프리미엄형제공량사용률(%)": (f.forecast / Math.max(fee.premiumInc, 1e-9)) * 100,
+      알림단계: alertLevel(f.current, f.forecast, inc),
+      "예측오차(%)": (Math.abs(f.forecast - f.actual) / Math.max(f.actual, 1e-9)) * 100,
+      패턴안정성점수: Number(c.패턴안정성점수),
+      수요관리우선점수: Number(c.수요관리우선점수),
+    });
+  }
+  return rows;
 }

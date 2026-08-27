@@ -70,12 +70,13 @@ Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의
 섹션(요금 모니터링 228건 + 예측 7건 + `dynamic_tariff_analysis`의 17,088행 전체 재계산 대조)과
 비교해 총 548건을 검증합니다.
 
-**이관하지 않은 것**: `build_tariff_monitor`(원본 L800~833, 화면에 뿌리는 최종 테이블 조립 함수)는
-"그룹"·패턴안정성점수·수요관리우선점수 컬럼이 Stage 3(군집분석 이관)의 산출물이라 아직 존재하지
-않아 보류했습니다. Stage 3 완료 후 바로 이어서 포팅합니다. 또한 `daily`/`profiles`(각 52만·82만
-행, 압축 안 하면 20MB 이상)는 아직 브라우저용 JSON으로 변환하지 않았습니다 — `forecastMonthLongitudinal`의
-로직 자체는 이미 실제 고객 데이터로 검증됐지만, 이 큰 두 테이블을 어떻게 압축 인코딩할지는 별도
-작업으로 남겨뒀습니다(고객ID·날짜를 반복 저장하지 않는 컬럼형 인코딩이 필요합니다).
+**당시 이관하지 않았던 것**: `build_tariff_monitor`(원본 L800~833, 화면에 뿌리는 최종 테이블 조립
+함수)는 "그룹"·패턴안정성점수·수요관리우선점수 컬럼이 Stage 3(군집분석 이관)의 산출물이라 이
+시점엔 아직 존재하지 않아 보류했었습니다 — Stage 3 완료 후 이관했고, 아래 별도 절에 정리했습니다.
+또한 `daily`/`profiles`(각 52만·82만 행, 압축 안 하면 20MB 이상)는 아직 브라우저용 JSON으로
+변환하지 않았습니다 — `forecastMonthLongitudinal`의 로직 자체는 이미 실제 고객 데이터로
+검증됐지만, 이 큰 두 테이블을 어떻게 압축 인코딩할지는 별도 작업으로 남겨뒀습니다(고객ID·날짜를
+반복 저장하지 않는 컬럼형 인코딩이 필요합니다).
 
 ### data/ + lib/enrich.ts — Stage 3: 군집분석 결과 반영 + 패턴안정성·수요관리우선점수 이관
 
@@ -102,15 +103,32 @@ Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의
 `golden/care-reference.json`의 `clustering_and_enrich_full`(원본을 Python에서 그대로 돌린 712명
 전체 결과)과 하나하나 대조합니다 — 총 4,275건.
 
-**아직 남은 것**: `build_tariff_monitor`(원본 L800~833, "그룹"·패턴안정성점수·수요관리우선점수까지
-합쳐 화면에 뿌리는 최종 테이블)는 이제 필요한 재료(`enrichScores`)가 다 갖춰졌으니 다음 업데이트에서
-바로 이어 포팅합니다. `daily`/`profiles`(각 52만·82만 행) JSON 압축 인코딩도 여전히 남아있습니다.
+### lib/tariff-monitor.ts (buildAnnualMonitor/buildMonthlyMonitor) — Stage 3 후속: build_tariff_monitor 이관
+
+`build_tariff_monitor`(원본 L800~833)까지 마저 이관했습니다. 원본은 "연간 전체"/"월중
+모니터링" 두 기간에 따라 완전히 다른 표를 만드는 하나의 함수였는데, TypeScript에서는
+`buildAnnualMonitor`/`buildMonthlyMonitor` 두 함수로 나눴습니다 — 원본의 두 분기와
+1:1 대응하고 계산 로직은 동일합니다.
+
+- `buildAnnualMonitor`: `data/monthly.json` + `enrichScores` 결과만으로 계산 가능해,
+  712명 전원 × 2024/2025 두 해를 전부 골든 대조합니다.
+- `buildMonthlyMonitor`: 조회일까지의 실측 + `forecastMonthLongitudinal` 예측으로
+  당월 요금·알림단계까지 계산합니다. `daily`(52만행) 전체가 아직 정적 JSON으로 배포되지
+  않은 상태라, `tests/golden/build-tariff-monitor.test.ts`는 골든 캡처에 함께 실어둔
+  표본 4명분의 daily 이력으로 검증합니다 — 로직 자체는 실제 고객 데이터로 검증된
+  것이고, 남은 건 아래 `daily`/`profiles` 규모를 어떻게 압축 인코딩할지뿐입니다.
+
+`tests/golden/build-tariff-monitor.test.ts`가 위 두 함수를 대조해 총 1,438건을 검증합니다.
+
+**아직 남은 것**: `daily`/`profiles`(각 52만·82만 행) JSON 압축 인코딩이 남아있습니다 —
+고객ID·날짜를 반복 저장하지 않는 컬럼형 인코딩이 필요합니다. 이게 끝나야 실제 UI에서
+"월중 모니터링" 표를 712명 전원 대상으로 보여줄 수 있습니다(지금은 로직 검증만 끝난 상태).
 
 ### 로컬 검증
 
 ```bash
 npm install
-npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) = 5,143건 전부 일치해야 통과
+npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(1,438) = 6,581건 전부 일치해야 통과
 npm run typecheck
 ```
 
@@ -139,11 +157,13 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
 1. ~~요금·구독 계산 함수 → TypeScript 포팅~~ — **완료** (`lib/tariff.ts`, 320건 전부 일치)
 2. ~~pandas 요금 모니터링 로직 → TypeScript 포팅~~ — **완료** (`lib/tariff-monitor.ts`, `lib/forecast.ts`, 548건 전부 일치)
 3. ~~군집분석 결과 반영 + 패턴안정성·수요관리우선점수 → TypeScript 포팅~~ — **완료**
-   (`data/*.json` 정적 데이터 + `lib/enrich.ts`, 4,275건 전부 일치). `build_tariff_monitor`와
-   `daily`/`profiles` JSON 압축 인코딩은 다음 업데이트로 이월
+   (`data/*.json` 정적 데이터 + `lib/enrich.ts`, 4,275건 전부 일치). ~~`build_tariff_monitor`~~도
+   이어서 **완료**(`buildAnnualMonitor`/`buildMonthlyMonitor`, 1,438건 전부 일치). `daily`/`profiles`
+   JSON 압축 인코딩만 다음 업데이트로 이월
 4. 변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체
 5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트) — 색상은 `design/PALETTE.md` 참고(따뜻한
-   노랑·주황 톤, 폰트·레이아웃 구조는 PRAS-DER과 동일)
+   노랑·주황 톤 + 민트 포인트, 폰트·레이아웃 구조는 PRAS-DER과 동일)
 
 지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) + Stage 2(요금
-모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관) 까지 완료된 상태입니다. 검증 총계: 5,143건.
+모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관 + build_tariff_monitor) 까지 완료된
+상태입니다. 검증 총계: 6,581건.

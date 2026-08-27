@@ -31,29 +31,52 @@ PRAS-DER과 동일하게 **Pretendard**(jsdelivr CDN)를 그대로 씁니다. �
 ```css
 :root {
   /* 브랜드 · 배경 */
-  --brand: #d9670f;       /* 주요 액션·강조 (PRAS의 --blue 대응) */
-  --brand-dark: #a8460f;  /* hover·짙은 강조 (PRAS의 --navy 대응) */
-  --brand-soft: #fdecd3;  /* 강조 카드 배경 (PRAS의 --blue-soft 대응) */
-  --brand-line: #f3cfa0;  /* 강조 카드 테두리 */
-  --gold: #eab308;        /* 포인트 강조색(로고 배지, 관심 단계) */
-  --gold-soft: #fdf1c8;
+  --brand: #f0813a;       /* 주요 액션·강조 (PRAS의 --blue 대응) */
+  --brand-dark: #cf5f1c;  /* hover·짙은 강조 (PRAS의 --navy 대응) */
+  --brand-soft: #fef1e2;  /* 강조 카드 배경 (PRAS의 --blue-soft 대응) */
+  --brand-line: #f8d7ac;  /* 강조 카드 테두리 */
+  --gold: #e3ba46;        /* 포인트 강조색(관심 단계 전용, 최소한만 사용) */
+  --gold-soft: #fbf2d8;
+
+  /* 강조색(민트) — 노랑·주황만 반복되면 칙칙해 보이는 걸 막는 포인트.
+     알림단계에는 쓰지 않고, 로고 배지·카드 태그 등 "필요한 곳"에만 사용 */
+  --mint: #2ea88e;
+  --mint-dark: #1f8571;
+  --mint-soft: #e2f5f0;
+  --mint-line: #bfe8dd;
 
   /* 텍스트 · 테두리 · 짙은 배경 */
-  --ink: #2b1c10;         /* 본문 텍스트 (PRAS의 --ink 대응) */
-  --ink-soft: #6b5a48;    /* 보조 텍스트 */
-  --line: #ecdfc7;        /* 테두리 (PRAS의 --line 대응) */
-  --surface: #fffaf2;     /* 카드 배경 (PRAS의 --surface 대응) */
-  --canvas: #faf3e7;      /* 페이지 배경 (PRAS의 --canvas 대응) */
-  --nav-dark: #33190c;    /* 상단 nav · footer 배경 (PRAS의 #081a2f 대응) */
+  --ink: #2f2618;         /* 본문 텍스트 (PRAS의 --ink 대응) */
+  --ink-soft: #83705c;    /* 보조 텍스트 */
+  --line: #ece2d0;        /* 테두리 (PRAS의 --line 대응) */
+  --surface: #fffdf9;     /* 카드 배경 (PRAS의 --surface 대응) */
+  --canvas: #fdfbf8;      /* 페이지 배경 — 거의 흰색, 아주 옅은 온기만 (PRAS의 --canvas 대응) */
+  --nav-dark: #3a2c19;    /* 상단 nav · footer 배경 (PRAS의 #081a2f 대응) */
 
   /* 의미색 — 알림단계 5단계 (정상 → 긴급 순서 그대로 브랜드 톤 확장) */
-  --green: #3f7d20;       /* 정상 */
-  --green-soft: #e9f3dd;
+  --green: #4f9d6e;       /* 정상 */
+  --green-soft: #e9f5ec;
   /* 관심 = --gold, 주의 = --brand, 경고 = --brand-dark (위에서 이미 정의) */
-  --red: #c0392b;         /* 긴급 */
-  --red-soft: #fbe6e2;
+  --red: #e0604a;         /* 긴급 */
+  --red-soft: #fbe9e4;
 }
 ```
+
+> **v2 수정**: 초안이 노랑(gold) 비중이 너무 크고 색이 전반적으로 진하다는 피드백을
+> 받아, 모든 색상의 채도를 낮추고(파스텔에 가깝게) `--gold`는 "관심" 단계 배지에만
+> 쓰도록 범위를 좁혔습니다. 로고 배지·nav 활성 탭 등 기존에 gold를 썼던 자리는
+> brand(주황) 계열로 옮겨 노란색이 페이지 전체에서 반복되는 인상을 줄였습니다.
+>
+> **v3 수정**: 페이지 배경(`--canvas`)이 여전히 노란기가 도는 크림색이라는 피드백을
+> 받아 `#f8f3e8` → `#fdfbf8`(거의 흰색, 아주 옅은 온기만 남김)로 더 밝혔습니다.
+>
+> **v4 수정**: "전체적으로 노랑·주황만 있어서 누런 느낌, 좀 더 산뜻하게" 피드백을 받아
+> 두 가지를 바꿨습니다. (1) `--brand`/`--brand-dark`/`--gold`/`--green`/`--red`의 채도를
+> 다시 살짝 올려 탁하고 밋밋한 느낌 대신 또렷하고 선명한 톤으로 조정했습니다(단, v3의
+> "옅게"는 배경·카드 등 넓은 면적에는 그대로 유지). (2) 완전히 새 색인 `--mint`(민트)를
+> 추가해, 로고 배지와 카드 태그 하나처럼 "필요한 곳"에 포인트로 섞었습니다 — 원래
+> 요청하신 "노랑·주황 중심 + 필요하면 다른 색으로 강조"를 실제로 실행한 부분입니다.
+> 알림단계 5단계(정상~긴급)는 의미가 고정된 신호라 민트를 넣지 않고 기존 순서를 유지했습니다.
 
 ## 알림단계 매핑
 
@@ -62,12 +85,18 @@ PRAS-DER과 동일하게 **Pretendard**(jsdelivr CDN)를 그대로 씁니다. �
 | 정상 | `--green` | `--green-soft` |
 | 관심 | `--gold` | `--gold-soft` |
 | 주의 | `--brand` | `--brand-soft` |
-| 경고 | `--brand-dark` | `#fbe3c8` |
+| 경고 | `--brand-dark` | `#f7ddc0` |
 | 긴급 | `--red` | `--red-soft` |
+
+## 강조색(민트) 사용 원칙
+
+`--mint`는 알림단계·요금 계산 등 의미가 고정된 곳에는 절대 쓰지 않습니다. 로고 배지,
+카드 태그처럼 "이 페이지에 브랜드 색만 있는 건 아니다"라는 산뜻함을 주고 싶은
+장식적인 자리에만, 화면당 1~2곳 정도로 아껴서 씁니다.
 
 ## 레이아웃 · 구조
 
-`.page-shell`, `.hero`(radial + 118deg 3-stop 그라디언트, 각도·정지점 동일, 색상값만
-`#5c2a0a → #a8460f → #dd7a1f`로 교체), `.section-card`, `.metric-grid`, `.landing-grid`/
-`.landing-card`, `.site-nav` — 클래스명·구조·spacing·radius 모두 PRAS-DER과 동일하게
-유지합니다. 바뀌는 것은 오직 `:root`의 색상 값뿐입니다.
+`.page-shell`, `.hero`(radial + 118deg 3-stop 그라디언트 + 민트 하이라이트 레이어 추가,
+구조는 동일, 색상값만 `#5c3a20 → #cf5f1c → #f0913f`로 교체), `.section-card`, `.metric-grid`,
+`.landing-grid`/`.landing-card`, `.site-nav` — 클래스명·구조·spacing·radius 모두 PRAS-DER과
+동일하게 유지합니다. 바뀌는 것은 오직 `:root`의 색상 값뿐입니다.

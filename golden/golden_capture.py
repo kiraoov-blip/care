@@ -383,6 +383,63 @@ def forecast_month_longitudinal_cases():
 
 capture("forecast_month_longitudinal_cases", forecast_month_longitudinal_cases)
 
+# ── 2.6. build_tariff_monitor (Stage 3 후속 항목 검증용) ────────────
+# 원본은 "연간 전체"/"월중 모니터링" 두 분기로 완전히 다른 표를 만든다.
+# cust_lookup(=customers.set_index("고객ID"))에 들어가는 customers는 원본 앱에서
+# enrich_scores() 결과("그룹"·패턴안정성점수·수요관리우선점수가 이미 붙은 것)이므로
+# 여기서도 raw customers가 아니라 enrich_scores 결과를 넘긴다.
+#
+# - "연간 전체" 분기: monthly만 있으면 계산 가능하므로 2024/2025 두 해 모두
+#   712명 전원을 캡처한다(monthly/customers는 이미 data/monthly.json·data/customers.json
+#   +data/clusters.json으로 배포돼 있어 따로 안 실어도 TS 쪽에서 재구성할 수 있다).
+# - "월중 모니터링" 분기: daily(52만행) 전체를 배포하지 않은 상태라, 이미
+#   forecast_month_longitudinal_cases에서 쓴 것과 같은 표본 4명의 daily만
+#   여기서도 함께 실어(중복이지만 4명 분량이라 무시할 크기) 재현 가능하게 한다.
+def build_tariff_monitor_cases():
+    data = call("load_data")
+    monthly = data["monthly"]
+    daily = data["daily"]
+    customers_raw = data["customers"]
+    _, _, wide, _ = call("joint_dynamic_clusters", customers_raw, 8)
+    enriched = call("enrich_scores", customers_raw, wide)
+    cluster_col = {
+        y: (f"{y}군집_동적" if f"{y}군집_동적" in enriched.columns else f"{y}군집")
+        for y in (2024, 2025)
+    }
+
+    annual = {}
+    for year in (2024, 2025):
+        df = call(
+            "build_tariff_monitor", daily, monthly, enriched, cluster_col[year],
+            "연간 전체", year, 7, 20, "기본형", **_BILL_KW,
+        )
+        annual[str(year)] = df.sort_values("고객ID").to_dict("records")
+
+    sample_ids = daily["고객ID"].unique()[:4]
+    daily_subset = daily[daily["고객ID"].isin(sample_ids)]
+    monthly_case = {}
+    for current_plan in ["기본형", "프리미엄형"]:
+        df = call(
+            "build_tariff_monitor", daily_subset, monthly, enriched, cluster_col[2025],
+            "월중 모니터링", 2025, 7, 20, current_plan, **_BILL_KW,
+        )
+        monthly_case[current_plan] = df.sort_values("고객ID").to_dict("records")
+
+    sample_daily = {
+        str(cid): daily[daily["고객ID"] == cid][["연도", "월", "일", "일유형", "일사용량_kWh"]].to_dict("records")
+        for cid in sample_ids
+    }
+
+    return {
+        "cluster_col": {str(k): v for k, v in cluster_col.items()},
+        "annual": annual,
+        "monthly_sample_customer_ids": [str(c) for c in sample_ids],
+        "monthly_sample_daily_rows": sample_daily,
+        "monthly": monthly_case,
+    }
+
+capture("build_tariff_monitor_cases", build_tariff_monitor_cases)
+
 # ── 3. 최적화 (ortools 필요 — 없으면 unavailable로 표시) ────────────
 def transformer_optimization_cases():
     import numpy as np
