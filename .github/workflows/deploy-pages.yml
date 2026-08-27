@@ -1,0 +1,47 @@
+name: Deploy CARE to GitHub Pages
+
+# 이 저장소에는 두 종류의 내용이 함께 들어있다.
+#   site/   -> 실제로 배포되는 정적 페이지 (지금은 care-jeju-v30.streamlit.app 을 감싸는 얇은 iframe 래퍼)
+#   legacy/ -> 이관 작업용 원본 파이썬 소스 + 데이터 사본 (배포 대상 아님, golden 캡처용)
+#   golden/ -> 원본 계산 결과를 고정해둔 기준값 (이관 검증용)
+#
+# GitHub Pages 에는 site/ 안의 내용만 올린다. legacy/ 의 12MB 데이터가
+# 실제 서비스 페이지에 함께 배포되는 것을 막기 위함이다.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: 배포
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
