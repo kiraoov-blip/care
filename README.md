@@ -150,11 +150,46 @@ Stage 2·3에서 미뤄뒀던 `daily`(52만행)·`profiles`(82만행) 압축 인
 검증해 총 84건을 확인합니다(2·3번은 소수 3자리 반올림으로 인한 최대 0.0005 오차를
 반올림 폭 안에서만 허용합니다 — 코드 주석 참고).
 
+### lib/optimize.ts — Stage 4: 변압기·행동계획 최적화(OR-Tools CP-SAT) 이관
+
+`optimize_transformer_profile`(원본 L310~366)·`optimize_actions`(원본 L836~866)를
+이관했습니다. 둘 다 원본은 OR-Tools CP-SAT(정수계획법 솔버)를 쓰는데, ortools는
+브라우저에서 돌릴 수 없어(WASM 포팅은 번들 크기·유지보수 부담이 커서 보류) 애초
+로드맵의 "브라우저용 WASM MIP 솔버로 교체" 대신, **두 CP-SAT 모델을 수학적으로
+분석해 정확한(근사가 아닌) 알고리즘으로 직접 치환**하는 쪽을 택했습니다 — 둘 다
+변수 개수가 최대 24개(변압기)·10개(행동계획)뿐인 아주 작은 순수 선형 정수계획
+문제라 이 방식이 가능했습니다. 판단 근거·검증 방법은 `lib/optimize.ts` 파일
+상단과 각 함수 주석에 자세히 적었습니다. 요약하면:
+
+- `optimizeTransformerProfile`: 시간대별 이동출·감축·이동입량을 정하는 문제로,
+  과부하 제거가 목적함수에서 압도적 최우선(가중치 100,000)이라는 구조를 이용해
+  "필요한 만큼만 이동출 우선, 부족분은 감축, 이동입 총량이 부족하면 감축으로
+  전환"하는 그리디로 정확히 풀립니다.
+- `optimizeActions`: "실행횟수" 정수변수로 목표 절감량을 채우는 유계 커버링
+  문제로, 이진 분해 기반 0/1 배낭 DP로 정확히 풀립니다. CP-SAT이 목표를 채울 수
+  없을 때(infeasible) 원본이 쓰는 "모든 대안을 최대치로 실행" 폴백도 그대로
+  옮겼습니다.
+- `controlledProfile`/`cumulativeProjection`(원본 L869~898, 위 최적화 결과를
+  소비해 제어 후 프로필·누적 사용량 곡선을 만드는 함수)도 CP-SAT과 무관한 순수
+  배열 연산이라 함께 이관해, 행동계획 최적화 기능 전체를 끝까지 완성했습니다.
+
+두 CP-SAT 모델은 이 이관 작업 샌드박스에도 ortools를 설치할 수 없어(정책상 차단)
+로컬에서는 실제 원본과 대조할 수 없었습니다 — 대신 scipy.optimize.milp(HiGHS
+기반 MIP 솔버, 이 샌드박스엔 설치돼 있음)로 CP-SAT과 동일한 모델을 독립적으로
+구성해 수백 회 무작위 대조했고, `tests/golden/optimize.test.ts`는 지금은
+"골든값 없음(ortools 미설치) — 건너뜀"으로 표시되는 두 구간(실제 CP-SAT 대조)을
+빼고도, 자체 결정론성·경계조건(제어 불필요/참여고객 없음/목표 달성 불가 폴백 등)
+62건을 검증합니다. **GitHub Actions에서 "CARE 골든 기준값 캡처"를 다시 돌리면**
+(ortools가 설치돼 있으므로) 두 함수의 실제 CP-SAT 대조까지 채워집니다 — 이번에는
+`golden_capture.py` 자체는 바뀌지 않았지만, 이 두 함수의 golden 값이 이 저장소
+역사상 처음으로 "unavailable"이 아닌 실제 값으로 채워지는 것이므로 반드시
+한 번 다시 돌려주셔야 완전한 대조가 됩니다.
+
 ### 로컬 검증
 
 ```bash
 npm install
-npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(2,854) + timeseries(84) = 8,081건 전부 일치해야 통과
+npm run test:golden   # billing(320) + tariff-monitor(548) + enrich(4,275) + build-tariff-monitor(2,854) + timeseries(84) + optimize(62, 자체 검증) = 8,143건 전부 일치해야 통과
 npm run typecheck
 ```
 
@@ -187,11 +222,16 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
    이어서 **완료**(`buildAnnualMonitor`/`buildMonthlyMonitor`, 712명 전원 기준 2,854건 전부 일치).
    ~~`daily`/`profiles` JSON 압축 인코딩~~도 **완료**(`data/daily.json`·`data/profiles.json` +
    `lib/timeseries.ts`, 84건 전부 일치) — 이걸로 Stage 3에 딸린 후속 항목이 전부 끝났습니다.
-4. 변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체
+4. ~~변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체~~ — **완료**.
+   다만 WASM 솔버를 들여오는 대신 두 CP-SAT 모델을 정확한 알고리즘으로 직접
+   치환하는 쪽을 택했습니다(`lib/optimize.ts`, 판단 근거는 위 절 참고). 실제
+   CP-SAT과의 최종 대조는 GitHub Actions에서 골든 캡처를 다시 돌려야 채워집니다.
 5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트) — 색상은 `design/PALETTE.md` 참고(따뜻한
    노랑·주황 톤 + 민트 포인트, 폰트·레이아웃 구조는 PRAS-DER과 동일)
 
 지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) + Stage 2(요금
 모니터링·사용량 예측 이관) + Stage 3(군집·점수 이관 + build_tariff_monitor + daily/profiles
-압축 인코딩까지 전부) 까지 완료된 상태입니다. 남은 건 4(OR-Tools)·5(최종 UI)뿐입니다.
-검증 총계: 8,081건.
+압축 인코딩까지 전부) + Stage 4(변압기·행동계획 최적화 이관, `lib/optimize.ts`) 까지 완료된
+상태입니다. 남은 건 5(최종 UI)뿐입니다. 검증 총계: 8,143건(그중 62건은 ortools 없이도
+확인 가능한 자체 결정론성·경계조건 검증이고, 실제 CP-SAT 대조는 GitHub Actions에서 골든
+캡처를 다시 돌린 뒤 채워집니다).
