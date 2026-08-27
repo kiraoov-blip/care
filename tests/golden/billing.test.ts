@@ -91,7 +91,10 @@ for (const c of golden.residential_component_breakdown) {
 }
 
 // ── 5. rounding_cases ────────────────────────────────────────────────
-const r = golden.rounding_cases;
+// golden(=JSON.parse 결과)은 any 이지만, any를 그대로 Object.entries에 넘기면
+// TS가 값 타입을 unknown으로 추론해 아래 check() 호출에서 타입 오류가 난다.
+// 대조 대상이 전부 { [값]: number } 형태임을 명시적으로 캐스팅해 알려준다.
+const r = golden.rounding_cases as Record<string, Record<string, number>>;
 for (const [k, expected] of Object.entries(r.round_half_up)) {
   check(`round_half_up(${k})`, roundHalfUp(Number(k)), expected);
 }
