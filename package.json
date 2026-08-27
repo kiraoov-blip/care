@@ -1,0 +1,15 @@
+{
+  "name": "care",
+  "private": true,
+  "type": "module",
+  "description": "CARE(J-CARE) 시뮬레이터 GitHub 기반 이관 작업 저장소",
+  "scripts": {
+    "test:golden": "tsx tests/golden/billing.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -9,6 +9,8 @@ CARE 시뮬레이터를, PRAS-DER처럼 GitHub Pages 기반 정적 사이트로 
 site/     실제로 GitHub Pages에 배포되는 내용
 legacy/   원본 파이썬 소스 + 데이터 사본 (배포되지 않음, 골든값 캡처 전용)
 golden/   원본 계산 결과를 고정한 기준값 (이관 검증용)
+lib/      TypeScript로 이관된 계산 로직 (Stage 1부터 여기에 쌓입니다)
+tests/golden/  lib/*.ts 가 golden/care-reference.json 과 정확히 같은 값을 내는지 대조하는 테스트
 ```
 
 ### site/ — 지금 당장 배포되는 것
@@ -34,12 +36,31 @@ Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의
 
 - `golden_capture.py`: `legacy/streamlit_app_actual_tou_v30.py`에서 UI 이전의 순수 계산 함수만
   실행해 요금·구독·군집·최적화 결과를 JSON으로 뽑아내는 스크립트.
-- `care-reference.json`: 그 결과. **지금 들어있는 파일은 ortools(변압기·행동계획 최적화 2개
-  함수)가 빠진 버전**입니다 — 개발 샌드박스에서는 정책상 ortools를 설치할 수 없어서입니다.
-  `.github/workflows/care-golden-capture.yml`을 이 저장소에서 한 번 수동 실행(Actions 탭 →
-  "CARE 골든 기준값 캡처" → Run workflow)하면, GitHub Actions 러너에는 제약이 없으므로
-  `requirements.txt`를 그대로 설치해 최적화 2개 함수까지 포함한 완전한 기준값을 다시 캡처해서
-  자동으로 커밋합니다.
+- `care-reference.json`: 그 결과 (저장소에 이미 있는 파일이며, 이번 업데이트에는 포함하지
+  않았습니다 — `.github/workflows/care-golden-capture.yml`을 GitHub Actions에서 한 번 실행해
+  ortools 최적화 2개 함수까지 포함한 완전한 버전으로 이미 갱신해두셨다면, 그 파일을 그대로
+  두시면 됩니다. 이 파일이 곧 이관의 "정답지"입니다.
+
+### lib/ + tests/golden/ — Stage 1: 요금·구독 계산 함수 TypeScript 이관
+
+`lib/tariff.ts` 에 다음 함수들을 원본과 계산 순서·반올림 규칙을 그대로 유지해 포팅했습니다.
+
+- `residentialBill` / `residentialBaseEnergy` — 주택용전력 저압 요금
+- `touBill` / `touBaseEnergy` — 제주 주택용 계시별(TOU) 요금
+- `subscriptionBill` / `inverseSubscriptionBill` — 구독형 요금·역산
+- `billComponentBreakdown`, `finalizeElectricBill` — 청구액 구성요소 계산
+- `roundHalfUp`, `truncateWon`, `truncate10Won`, `billedKwh`, `allocateIntegerKwh` — 반올림·절사·시간대 배분 유틸
+
+`tests/golden/billing.test.ts`가 `golden/care-reference.json`에 들어있는 요금·구독·역산·구성요소·
+반올림 케이스(총 320건)를 이 TS 함수들의 출력과 하나하나 대조합니다. 로컬에서 검증하려면:
+
+```bash
+npm install
+npm run test:golden   # 320건 전부 일치해야 통과
+npm run typecheck
+```
+
+`.github/workflows/golden.yml`이 `main` 브랜치에 push/PR 될 때마다 이 검증을 자동으로 돌립니다.
 
 ## 원본(`subscription-energy-optimizer`)과의 관계
 
@@ -61,10 +82,11 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
 
 ## 다음 단계 (이관 5단계)
 
-1. 요금·구독 계산 함수 → TypeScript 포팅 (golden 기준값과 대조)
+1. ~~요금·구독 계산 함수 → TypeScript 포팅 (golden 기준값과 대조)~~ — **완료** (`lib/tariff.ts`, 320건 전부 일치)
 2. pandas 데이터 파이프라인 → 미리 계산된 JSON으로 변환
 3. 군집분석(k-means) → TypeScript 포팅
 4. 변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체
 5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트)
 
-지금은 Stage 0(골든값 캡처, ortools 제외)까지 완료된 상태입니다.
+지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) 까지 완료된
+상태입니다.
