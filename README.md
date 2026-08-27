@@ -52,11 +52,36 @@ Next.js 정적 빌드(또는 순수 정적 HTML/JS)로 교체되어, PRAS-DER의
 - `roundHalfUp`, `truncateWon`, `truncate10Won`, `billedKwh`, `allocateIntegerKwh` — 반올림·절사·시간대 배분 유틸
 
 `tests/golden/billing.test.ts`가 `golden/care-reference.json`에 들어있는 요금·구독·역산·구성요소·
-반올림 케이스(총 320건)를 이 TS 함수들의 출력과 하나하나 대조합니다. 로컬에서 검증하려면:
+반올림 케이스(총 320건)를 이 TS 함수들의 출력과 하나하나 대조합니다.
+
+### lib/tariff-monitor.ts + lib/forecast.ts — Stage 2: 요금 모니터링·사용량 예측 이관
+
+`monthly`(고객×연도×월 사용량) 테이블을 다루는 함수들을 포팅했습니다.
+
+- `monthlyBillMap` / `annualBillMap` — 월별·연간 4개 요금제 동시 계산
+- `billForPlan` / `inverseBillForPlan` — 특정 요금제 청구액·역산(이분탐색 70회, 원본과 동일)
+- `tariffComparisonTable` — 요금제 비교표(현재 적용/추천/비교 판정)
+- `dynamicTariffAnalysis` — 전체 고객의 월별·연간 추천요금제, 요금제별 평균/중앙값, 연도간
+  전이표, 안정성 지표까지 한 번에 재계산 (원본이 pandas groupby/pivot으로 하는 것을 그대로 이관)
+- `forecastMonthLongitudinal` — 조회일까지의 실측치 + 전년 동월 패턴으로 월말 사용량 예측
+- `alertLevel` — 예측 사용량 기준 알림단계(정상/관심/주의/경고/긴급) 판정
+
+`tests/golden/tariff-monitor.test.ts`가 위 함수들을 `golden/care-reference.json`의 Stage 2
+섹션(요금 모니터링 228건 + 예측 7건 + `dynamic_tariff_analysis`의 17,088행 전체 재계산 대조)과
+비교해 총 548건을 검증합니다.
+
+**이관하지 않은 것**: `build_tariff_monitor`(원본 L800~833, 화면에 뿌리는 최종 테이블 조립 함수)는
+"그룹"·패턴안정성점수·수요관리우선점수 컬럼이 Stage 3(군집분석 이관)의 산출물이라 아직 존재하지
+않아 보류했습니다. Stage 3 완료 후 바로 이어서 포팅합니다. 또한 `daily`/`profiles`(각 52만·82만
+행, 압축 안 하면 20MB 이상)는 아직 브라우저용 JSON으로 변환하지 않았습니다 — `forecastMonthLongitudinal`의
+로직 자체는 이미 실제 고객 데이터로 검증됐지만, 이 큰 두 테이블을 어떻게 압축 인코딩할지는 별도
+작업으로 남겨뒀습니다(고객ID·날짜를 반복 저장하지 않는 컬럼형 인코딩이 필요합니다).
+
+### 로컬 검증
 
 ```bash
 npm install
-npm run test:golden   # 320건 전부 일치해야 통과
+npm run test:golden   # billing(320건) + tariff-monitor(548건) 전부 일치해야 통과
 npm run typecheck
 ```
 
@@ -82,11 +107,11 @@ Streamlit Community Cloud는 특정 저장소+브랜치+파일에 직접 연결�
 
 ## 다음 단계 (이관 5단계)
 
-1. ~~요금·구독 계산 함수 → TypeScript 포팅 (golden 기준값과 대조)~~ — **완료** (`lib/tariff.ts`, 320건 전부 일치)
-2. pandas 데이터 파이프라인 → 미리 계산된 JSON으로 변환
-3. 군집분석(k-means) → TypeScript 포팅
+1. ~~요금·구독 계산 함수 → TypeScript 포팅~~ — **완료** (`lib/tariff.ts`, 320건 전부 일치)
+2. ~~pandas 요금 모니터링 로직 → TypeScript 포팅~~ — **완료** (`lib/tariff-monitor.ts`, `lib/forecast.ts`, 548건 전부 일치). 단, `daily`/`profiles` 원본 CSV의 JSON 압축 인코딩과 `build_tariff_monitor`는 Stage 3 이후로 이월
+3. 군집분석(k-means) → TypeScript 포팅 (`joint_dynamic_clusters`, `enrich_scores`) — 완료되면 위에서 미룬 `build_tariff_monitor`도 마저 포팅
 4. 변압기·행동계획 최적화(OR-Tools) → 브라우저용 WASM MIP 솔버로 교체
 5. 최종 UI 구현 (8개 탭, 18개 입력, 12개 차트)
 
-지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) 까지 완료된
-상태입니다.
+지금은 Stage 0(골든값 캡처, ortools 포함 완료) + Stage 1(요금·구독 계산 이관) + Stage 2(요금
+모니터링·사용량 예측 이관) 까지 완료된 상태입니다.

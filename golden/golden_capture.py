@@ -211,6 +211,154 @@ def data_and_clusters():
 
 capture("data_and_clusters", data_and_clusters)
 
+# ── 2.5. 요금 모니터링 (monthly/customers 테이블, ortools 불필요) ────
+# Stage 2(pandas 파이프라인 → TS 이관) 검증용. 원본 함수 시그니처 그대로,
+# 사이드바 기본값(구독 기본형/프리미엄형, 초과단가 300원)을 고정해 호출한다.
+_BASIC = ns["PLAN_DEFAULTS"]["기본형"]
+_PREMIUM = ns["PLAN_DEFAULTS"]["프리미엄형"]
+_OVERAGE = 300.0
+_BILL_KW = dict(basic_fee=_BASIC["fee"], basic_inc=_BASIC["included"],
+                premium_fee=_PREMIUM["fee"], premium_inc=_PREMIUM["included"], overage=_OVERAGE)
+
+def monthly_bill_map_cases():
+    data = call("load_data")
+    monthly = data["monthly"]
+    out = []
+    sample_rows = monthly[monthly["고객ID"].isin(monthly["고객ID"].unique()[:4])]
+    for _, r in sample_rows.iterrows():
+        bills = call("monthly_bill_map", float(r["사용량_kWh"]), int(r["월"]), r, **_BILL_KW)
+        out.append({
+            "customer_id": str(r["고객ID"]), "year": int(r["연도"]), "month": int(r["월"]),
+            "usage_kwh": float(r["사용량_kWh"]),
+            "off_share": float(r["경부하비중"]), "mid_share": float(r["중간부하비중"]), "peak_share": float(r["최대부하비중"]),
+            "bills": bills,
+        })
+    return out
+
+capture("monthly_bill_map_cases", monthly_bill_map_cases)
+
+def annual_bill_map_cases():
+    data = call("load_data")
+    monthly = data["monthly"]
+    out = []
+    for cid in monthly["고객ID"].unique()[:4]:
+        for year in sorted(monthly["연도"].unique()):
+            g = monthly[(monthly["고객ID"] == cid) & (monthly["연도"] == year)]
+            if g.empty:
+                continue
+            totals = call("annual_bill_map", g, **_BILL_KW)
+            out.append({"customer_id": str(cid), "year": int(year), "totals": totals})
+    return out
+
+capture("annual_bill_map_cases", annual_bill_map_cases)
+
+def bill_for_plan_cases():
+    data = call("load_data")
+    monthly = data["monthly"]
+    row = monthly.iloc[0]
+    out = []
+    for plan in ns["PLAN_ORDER"]:
+        for usage in [0, 250, 550, 1200]:
+            v = call("bill_for_plan", plan, float(usage), int(row["월"]), row, **_BILL_KW)
+            out.append({"plan": plan, "usage_kwh": usage, "month": int(row["월"]), "bill_won": v})
+    return out
+
+capture("bill_for_plan_cases", bill_for_plan_cases)
+
+def inverse_bill_for_plan_cases():
+    data = call("load_data")
+    monthly = data["monthly"]
+    row = monthly.iloc[0]
+    out = []
+    for plan in ns["PLAN_ORDER"]:
+        for target in [30_000, 84_900, 150_000, 300_000]:
+            v = call("inverse_bill_for_plan", float(target), plan, int(row["월"]), row, **_BILL_KW)
+            out.append({"plan": plan, "target_bill": target, "month": int(row["월"]), "max_kwh": v})
+    return out
+
+capture("inverse_bill_for_plan_cases", inverse_bill_for_plan_cases)
+
+def tariff_comparison_table_cases():
+    data = call("load_data")
+    monthly = data["monthly"]
+    out = []
+    for _, r in monthly.head(3).iterrows():
+        bills = call("monthly_bill_map", float(r["사용량_kWh"]), int(r["월"]), r, **_BILL_KW)
+        for current_plan in ns["PLAN_ORDER"]:
+            table = call("tariff_comparison_table", bills, current_plan)
+            out.append({
+                "customer_id": str(r["고객ID"]), "month": int(r["월"]), "current_plan": current_plan,
+                "bills": bills, "table": table.to_dict("records"),
+            })
+    return out
+
+capture("tariff_comparison_table_cases", tariff_comparison_table_cases)
+
+def dynamic_tariff_analysis_digest():
+    data = call("load_data")
+    monthly = data["monthly"]
+    result = call(
+        "dynamic_tariff_analysis", monthly,
+        _BASIC["fee"], _BASIC["included"], _PREMIUM["fee"], _PREMIUM["included"], _OVERAGE,
+        5.0, 9.0, 0.10, 0.027, 3.0,
+    )
+    mc = result["monthly_customer"]
+    ac = result["annual_customer"]
+    return {
+        "monthly_customer_row_count": int(len(mc)),
+        "monthly_customer_first5": mc.head(5).to_dict("records"),
+        "annual_customer_row_count": int(len(ac)),
+        "annual_customer_first5": ac.head(5).to_dict("records"),
+        "annual_summary": result["annual_summary"].to_dict("records"),
+        "annual_transition": result["annual_transition"].to_dict("records"),
+        "annual_stability": result["annual_stability"],
+        "monthly_stability": result["monthly_stability"],
+        "monthly_summary_row_count": int(len(result["monthly_summary"])),
+        "monthly_summary_first5": result["monthly_summary"].head(5).to_dict("records"),
+    }
+
+capture("dynamic_tariff_analysis_digest", dynamic_tariff_analysis_digest)
+
+def alert_level_cases():
+    out = []
+    for current, forecast, included in [
+        (100, 200, 450), (400, 460, 450), (300, 500, 450),
+        (250, 400, 450), (100, 150, 450), (500, 500, 450),
+    ]:
+        out.append({
+            "current": current, "forecast": forecast, "included": included,
+            "level": call("alert_level", float(current), float(forecast), float(included)),
+        })
+    return out
+
+capture("alert_level_cases", alert_level_cases)
+
+def forecast_month_longitudinal_cases():
+    data = call("load_data")
+    daily = data["daily"]
+    out = []
+    customer_ids = daily["고객ID"].unique()[:4]
+    for cid in customer_ids:
+        customer_daily = daily[daily["고객ID"] == cid].copy()
+        customer_daily["날짜"] = customer_daily["날짜"].astype(str)
+        forecasts = []
+        for year, month, cutoff in [(2025, 7, 15), (2025, 7, 20), (2025, 1, 10)]:
+            if customer_daily[(customer_daily["연도"] == year) & (customer_daily["월"] == month)].empty:
+                continue
+            f = call("forecast_month_longitudinal", customer_daily, year, month, cutoff)
+            forecasts.append({"year": year, "month": month, "cutoff_day": cutoff, "result": f})
+        out.append({
+            "customer_id": str(cid),
+            # 한 번만 저장 — forecasts 각각이 같은 고객의 전체 일별 이력을 참조한다.
+            "customer_daily_rows": customer_daily[
+                ["연도", "월", "일", "일유형", "일사용량_kWh"]
+            ].to_dict("records"),
+            "forecasts": forecasts,
+        })
+    return out
+
+capture("forecast_month_longitudinal_cases", forecast_month_longitudinal_cases)
+
 # ── 3. 최적화 (ortools 필요 — 없으면 unavailable로 표시) ────────────
 def transformer_optimization_cases():
     import numpy as np
