@@ -435,6 +435,21 @@ footer.app-footer {
   .sidebar.open { transform: translateX(0); }
   .menu-btn { display: inline-flex; align-items: center; justify-content: center; }
   .main { padding: 1rem; }
+  /* 사이드바가 화면 위로 뜨는 드로어로 바뀌는 지점부터만 백드롭이 필요하다(그 전
+     너비에서는 사이드바가 본문과 나란히 항상 열려 있어 백드롭이 필요 없다). 뒤에
+     깔린 본문(캔버스 배경·카드·차트)이 어두운 반투명 막 없이 그대로 비치면 화면
+     배경이 웹 버전과 다르게(또는 뒤섞여) 보인다는 인상을 준다 — 그 지점을 없앤다. */
+  .sidebar-backdrop {
+    position: fixed; inset: 52px 0 0 0; z-index: 24;
+    background: rgba(20, 14, 6, 0.42);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+}
+@media (min-width: 901px) {
+  /* 900px 초과에서는 사이드바가 드로어가 아니라 항상 열린 고정 패널이므로,
+     JS 쪽에서 open 클래스가 남아 있어도 백드롭이 데스크톱 화면을 가리지 않게 한다. */
+  .sidebar-backdrop { display: none; }
 }
 
 /* ── 좁은 화면 대응 ──

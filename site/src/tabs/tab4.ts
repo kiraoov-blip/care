@@ -114,12 +114,21 @@ function clusterSummaryTable(summary: ClusterSummaryRow[]): HTMLDivElement {
   return renderTable(columns, rows);
 }
 
+/** "그룹 1 · 동계민감·변동형" → "그룹 1"(맨 앞 " · " 앞부분만). 히트맵 위쪽 열 라벨은
+ * 세로 공간이 좁아 전체 설명까지 넣으면 옆 칸 글자와 겹쳐 읽을 수 없게 된다 —
+ * 짧은 그룹 번호만 쓰고, 전체 이름은 왼쪽 행 라벨(세로로 한 줄씩 여유가 있는 곳)에서
+ * 확인하도록 한다(같은 그룹 집합이라 행 쪽에 항상 전체 이름이 나온다). */
+function shortGroupLabel(label: string): string {
+  return label.split(" · ")[0] ?? label;
+}
+
 /** matrix(원본 cluster_transition.pivot(...)) → 히트맵. */
 function transitionHeatmap(transition: ClusterTransitionRow[]): HTMLDivElement {
   const rowLabels = Array.from(new Set(transition.map((t) => t["2024군집"]))).sort();
-  const colLabels = Array.from(new Set(transition.map((t) => t["2025군집"]))).sort();
+  const colLabelsFull = Array.from(new Set(transition.map((t) => t["2025군집"]))).sort();
+  const colLabels = colLabelsFull.map(shortGroupLabel);
   const matrix: number[][] = rowLabels.map((rowLabel) =>
-    colLabels.map((colLabel) => {
+    colLabelsFull.map((colLabel) => {
       const found = transition.find((t) => t["2024군집"] === rowLabel && t["2025군집"] === colLabel);
       return found ? found.고객수 : 0;
     })

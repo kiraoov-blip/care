@@ -259,9 +259,22 @@ async function boot(): Promise<void> {
   }
   buildSidebar();
 
-  menuBtn.addEventListener("click", () => sidebar.classList.toggle("open"));
+  // 모바일에서 사이드바를 드로어로 열 때, 뒤에 깔린 본문이 그대로 비쳐 보이면
+  // 화면 배경이 데스크톱과 다르게(또는 지저분하게) 보인다는 인상을 준다 —
+  // 어두운 반투명 백드롭으로 본문을 가리고, 백드롭을 탭하면 닫히게 한다.
+  const sidebarBackdrop = el("div", { className: "sidebar-backdrop" });
+  const closeSidebar = () => {
+    sidebar.classList.remove("open");
+    sidebarBackdrop.classList.remove("open");
+  };
+  menuBtn.addEventListener("click", () => {
+    const willOpen = !sidebar.classList.contains("open");
+    sidebar.classList.toggle("open", willOpen);
+    sidebarBackdrop.classList.toggle("open", willOpen);
+  });
+  sidebarBackdrop.addEventListener("click", closeSidebar);
 
-  const shell = el("div", { className: "app-shell" }, [sidebar, panelsHost]);
+  const shell = el("div", { className: "app-shell" }, [sidebar, sidebarBackdrop, panelsHost]);
   const footer = el("footer", {
     className: "app-footer",
     text: "CARE-Jeju 시뮬레이터는 개념검증·내부 의사결정 지원도구이며, 실제 요금상품 출시나 배전계통 운전명령에 직접 사용하는 운영시스템이 아닙니다. 자세한 한계는 «방법론·한계» 탭을 참고하세요.",

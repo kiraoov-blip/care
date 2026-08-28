@@ -9,7 +9,6 @@
 import type { AppContext } from "../main.js";
 import {
   clear,
-  el,
   metricGrid,
   type MetricSpec,
   renderTable,
@@ -22,6 +21,8 @@ import {
   sectionTitle,
   subheading,
   insightBanner,
+  sectionCard,
+  cardRow,
 } from "../ui.js";
 import { barChart, type BarDatum } from "../charts.js";
 import {
@@ -94,6 +95,14 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   const annualTop = PLAN_ORDER.reduce((a, b) => (annualCounts[b] > annualCounts[a] ? b : a));
   const annualTotal = annualSelected.length || 1;
 
+  // 월별 분포는 원래 "2. 월별 추천 요금제" 절에서 계산했지만, 연간·월별 막대차트를
+  // 2열로 나란히 배치하려면 여기서 미리 계산해 둬야 한다(월별 선택 컨트롤 자체는
+  // 아래 원래 위치에 그대로 둔다 — 문서 흐름·상태 업데이트 로직은 바뀌지 않는다).
+  const monthlySelected = tariffDynamic.monthlyCustomer.filter(
+    (r) => r.연도 === monthlyYear && r.월 === monthlyMonth
+  );
+  const monthlyCounts = planCounts(monthlySelected, (r) => r.월별추천요금제);
+
   root.append(
     insightBanner({
       tone: "brand",
@@ -116,13 +125,23 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
     ] as MetricSpec[])
   );
 
-  root.append(el("div", { className: "section-sub", text: `${annualYear}년 연간 추천요금제 분포` }));
-  root.append(
+  // 연간·월별 추천요금제 분포 막대차트를 2열로 나란히 배치한다(막대 폭도 절반 카드에
+  // 맞춰 자연스럽게 얇아진다). 월별 쪽 계산은 위에서 미리 끝내 두었다.
+  const annualDistCard = sectionCard(`${annualYear}년 연간 추천요금제 분포`, [
     barChart({
       data: PLAN_ORDER.map((p) => ({ label: p, value: annualCounts[p] })) as BarDatum[],
+      width: 560,
       valueFormat: (v) => v.toLocaleString("ko-KR"),
-    })
-  );
+    }),
+  ]);
+  const monthlyDistCard = sectionCard(`${monthlyYear}년 ${monthlyMonth}월 추천요금제 분포`, [
+    barChart({
+      data: PLAN_ORDER.map((p) => ({ label: p, value: monthlyCounts[p] })) as BarDatum[],
+      width: 560,
+      valueFormat: (v) => v.toLocaleString("ko-KR"),
+    }),
+  ]);
+  root.append(cardRow([annualDistCard, monthlyDistCard]));
 
   const annualPlanFilterControl = selectField(
     "연간 추천요금제 필터",
@@ -198,10 +217,8 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   );
   root.append(controlsRow([monthlyYearControl, monthlyMonthControl]));
 
-  const monthlySelected = tariffDynamic.monthlyCustomer.filter(
-    (r) => r.연도 === monthlyYear && r.월 === monthlyMonth
-  );
-  const monthlyCounts = planCounts(monthlySelected, (r) => r.월별추천요금제);
+  // monthlySelected/monthlyCounts는 연간·월별 분포차트를 나란히 배치하기 위해
+  // 위(annualTotal 계산 직후)에서 이미 계산해 두었다 — 여기서는 다시 계산하지 않는다.
 
   root.append(
     metricGrid([
@@ -213,13 +230,8 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
     ] as MetricSpec[])
   );
 
-  root.append(el("div", { className: "section-sub", text: `${monthlyYear}년 ${monthlyMonth}월 추천요금제 분포` }));
-  root.append(
-    barChart({
-      data: PLAN_ORDER.map((p) => ({ label: p, value: monthlyCounts[p] })) as BarDatum[],
-      valueFormat: (v) => v.toLocaleString("ko-KR"),
-    })
-  );
+  // (월별 추천요금제 분포 막대차트는 위쪽 "연간 추천 요금제" 절에서 연간 차트와
+  // 함께 2열로 이미 표시했다 — 여기서는 다시 그리지 않는다.)
 
   root.append(monthlySummaryTable(tariffDynamic.monthlySummary.filter((r) => r.연도 === monthlyYear)));
 
