@@ -83,6 +83,16 @@ function formatCell(value: unknown, kind: ColumnKind): string {
   }
 }
 
+/** "연간사용량(kWh)"처럼 단위가 괄호로 바로 붙은 열 이름은 띄어쓰기(줄바꿈 지점)가
+ * 전혀 없다 — 표 헤더는 폭을 줄이려고 두 줄로 접히게 두는데(narrow 열), 띄어쓰기가
+ * 없으면 브라우저가 "사용 량"처럼 단어 중간을 강제로 잘라 읽기 어려워진다. 실제
+ * 열 키(c.key)나 kind 판정에 쓰는 c.label 문자열 자체는 건드리지 않고, 화면에
+ * 보여줄 헤더 텍스트에서만 "(" 앞에 공백을 넣어 그 자리에서 자연스럽게 줄바꿈되게
+ * 한다(이미 공백이 있으면 중복으로 넣지 않는다). */
+function headerBreakLabel(label: string): string {
+  return label.replace(/([^\s(])\(/g, "$1 (");
+}
+
 export interface TableOptions {
   height?: number; // px, 지정하면 세로 스크롤 표(원본 st.dataframe height=)
 }
@@ -99,7 +109,7 @@ export function renderTable<T extends Record<string, unknown>>(
   const headRow = el("tr");
   for (const c of columns) {
     const kind = c.kind ?? inferKind(c.label);
-    headRow.append(el("th", { className: kind === "text" ? "" : "num", text: c.label }));
+    headRow.append(el("th", { className: kind === "text" ? "" : "num", text: headerBreakLabel(c.label) }));
   }
   thead.append(headRow);
   const tbody = el("tbody");
@@ -163,6 +173,53 @@ export function numberField(
   if (opts.max !== undefined) input.max = String(opts.max);
   if (opts.step !== undefined) input.step = String(opts.step);
   input.addEventListener("change", () => onChange(Number(input.value)));
+  return el("div", { className: "control" }, [el("label", { text: label }), input]);
+}
+
+/** numberField와 같은 값·동작이지만, 천 단위 콤마를 넣어 보여준다(원본 요금 입력칸이
+ * "84900"처럼 자리수가 많아 한눈에 읽기 어렵다는 요청 반영). 네이티브 <input
+ * type="number">는 콤마가 섞이면 값 자체를 거부하므로, type="text"로 두고 표시만
+ * 콤마로 포맷한 뒤 입력값에서는 콤마를 지우고 숫자로 파싱한다 — 스피너(▲▼)가
+ * 없어지는 대신 직접 타이핑할 때도 자릿수를 세기 쉬워진다. 편집 중(포커스 상태)에는
+ * 다시 포맷하지 않고, blur(포커스를 벗어날 때)에만 정리된 값으로 다시 그린다 —
+ * 타이핑 중간에 콤마가 끼어들어 커서 위치가 튀는 것을 막기 위함이다. */
+export function numberFieldCommas(
+  label: string,
+  value: number,
+  onChange: (v: number) => void,
+  opts: { min?: number; max?: number; step?: number } = {}
+): HTMLDivElement {
+  const format = (v: number) => v.toLocaleString("ko-KR", { maximumFractionDigits: 4 });
+  const parse = (s: string): number => {
+    const cleaned = s.replace(/,/g, "").trim();
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const clamp = (v: number): number => {
+    let out = v;
+    if (opts.min !== undefined) out = Math.max(opts.min, out);
+    if (opts.max !== undefined) out = Math.min(opts.max, out);
+    return out;
+  };
+  const input = el("input", {
+    type: "text",
+    inputMode: "decimal",
+    value: format(value),
+  }) as HTMLInputElement;
+  input.addEventListener("focus", () => {
+    // 편집 시작 시에는 콤마를 없애 순수 숫자만 남긴다 — 콤마가 낀 채로 커서를
+    // 옮기며 편집하면 자리마다 위치가 바뀌어 오히려 불편하다.
+    input.value = String(parse(input.value));
+    input.select();
+  });
+  input.addEventListener("blur", () => {
+    const next = clamp(parse(input.value));
+    input.value = format(next);
+    onChange(next);
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") input.blur();
+  });
   return el("div", { className: "control" }, [el("label", { text: label }), input]);
 }
 

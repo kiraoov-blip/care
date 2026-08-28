@@ -7,7 +7,7 @@
 
 import { loadRawData, computeDerivedState, type RawData, type DerivedState } from "./data.js";
 import type { FeeParams } from "../../lib/tariff-monitor.js";
-import { el, numberField, selectField } from "./ui.js";
+import { el, numberField, numberFieldCommas, selectField } from "./ui.js";
 
 import { renderTab1 } from "./tabs/tab1.js";
 import { renderTab2 } from "./tabs/tab2.js";
@@ -177,7 +177,7 @@ async function boot(): Promise<void> {
     for (const [label, key, step] of feeFields) {
       sidebar.append(
         wrapField(
-          numberField(label, fee[key] as number, (v) => {
+          numberFieldCommas(label, fee[key] as number, (v) => {
             fee = { ...fee, [key]: v };
             onStateChanged();
           }, { step, min: 0 })

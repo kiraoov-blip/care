@@ -408,8 +408,18 @@ table.data-table thead th {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.01em; z-index: 1;
   /* 열이 많은 표(고객별 요금 모니터링 등)는 헤더 문구가 데이터 값보다 길어서 표 전체
      너비를 넓히는 주된 원인이었다 — 헤더만 두 줄로 접히게 허용해 폭을 줄인다.
-     데이터 칸(td)은 그대로 한 줄(nowrap) 유지. */
-  white-space: normal; line-height: 1.25; vertical-align: bottom; min-width: 4.2em;
+     데이터 칸(td)은 그대로 한 줄(nowrap) 유지. renderTable의 headerBreakLabel()이
+     "(" 앞에 공백을 넣어 그 지점에서 줄바꿈되게 하지만, "최대시간 사용량"처럼 그
+     앞부분 자체가 긴 경우까지 완전히 막지는 못한다 — min-width를 4.2em→5em으로
+     살짝 늘려 두 줄로 접힐 때 단어 중간이 잘리는 경우를 더 줄인다(금액 열이
+     만원 단위로 좁아진 만큼 확보된 여유를 여기 씀). */
+  white-space: normal; line-height: 1.25; vertical-align: bottom; min-width: 5em;
+  /* headerBreakLabel()이 "(" 앞에는 띄어쓰기를 넣어 주지만, "최대시간 사용량"처럼
+     띄어쓰기 없는 한글 낱말 자체가 길면 브라우저가 그 낱말 중간(예: "사용 량")을
+     그냥 잘라버린다 — keep-all은 CJK 텍스트에서 공백이 있는 지점에서만 줄바꿈하고
+     낱말 중간은 last-resort로만 자르게 해, 남는 공간이 있으면 낱말을 온전히 유지한
+     채로 줄바꿈 지점을 고른다. */
+  word-break: keep-all;
 }
 table.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--line) 22%, transparent); }
 table.data-table tbody tr:hover { background: var(--brand-soft); }
