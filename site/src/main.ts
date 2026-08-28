@@ -114,12 +114,23 @@ async function boot(): Promise<void> {
   }
 
   const menuBtn = el("button", { className: "menu-btn", type: "button", text: "☰" });
+  // 도메인 루트(허브: PRAS-DER/CARE-Jeju 선택 화면)로 돌아가는 버튼. 이 앱은 basePath
+  // 개념이 없는 정적 페이지이고 /care/ 아래에서 서비스되므로, href="/"는 그대로
+  // 실제 도메인 루트를 가리킨다(별도 우회 불필요).
+  const homeBtn = el("a", {
+    className: "site-home-btn",
+    href: "/",
+    html:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 11.4 12 4.4l8.4 7"/><path d="M5.7 10.2V19a1 1 0 0 0 1 1H9.6v-5.3h4.8V20h2.9a1 1 0 0 0 1-1v-8.8"/></svg><span>처음으로</span>',
+  });
+  homeBtn.setAttribute("aria-label", "처음 화면으로");
   const topbar = el("div", { className: "topbar" }, [
     el("div", { className: "brand" }, [
       el("div", { className: "ko", text: "제주 TOU 요금·에너지관리 시뮬레이터" }),
       el("div", { className: "en", html: '<b>CARE-Jeju</b> Customer Analytics, Rate Recommendation &amp; Energy Management' }),
     ]),
     tablist,
+    homeBtn,
     menuBtn,
   ]);
 

@@ -120,6 +120,12 @@
 }
 
 * { box-sizing: border-box; }
+/* PRAS-DER(app/globals.css)와 동일 — 좁은 화면에서 사이드바 드로어(translateX)나
+   스크롤되는 탭 목록처럼 뷰포트 밖으로 밀려나는 요소가 있어도 페이지 자체에는
+   가로 스크롤이 생기지 않게 막는다. body가 아니라 html에 둬야
+   (body만 hidden으로 두면 overflow-y가 auto로 강제 전환되는 스펙 규칙 때문에
+   세로 스크롤바 폭만큼 오히려 폭 계산이 어긋난다) 뷰포트 자체가 깔끔하게 잘린다. */
+html { overflow-x: hidden; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -135,38 +141,52 @@ p { margin: 0 0 0.6rem 0; }
 button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
 a { color: var(--brand-dark); }
 
-/* ── 상단 바 ── */
+/* ── 상단 바 ──
+   PRAS-DER 쪽 .site-nav/.site-nav-inner(app/globals.css)와 높이(52px)·글자 크기·
+   여백·정렬 방식을 그대로 맞추고, 색만 CARE 고유 팔레트(--brand 계열)를 쓴다. */
 .topbar {
   position: sticky; top: 0; z-index: 30;
-  display: flex; align-items: center; gap: 1rem;
-  padding: 0.65rem 1.1rem;
+  display: flex; align-items: center; gap: 26px;
+  height: 52px; padding: 0 30px;
   background: var(--nav-dark);
   color: #f6ece0;
   box-shadow: 0 1px 0 rgba(0,0,0,0.2);
 }
-.topbar .brand { display: flex; flex-direction: column; gap: 0.1rem; margin-right: 0.5rem; flex: 0 0 auto; }
-.topbar .brand .ko { font-weight: 800; font-size: 1.02rem; letter-spacing: -0.01em; }
-.topbar .brand .en { font-size: 0.7rem; opacity: 0.68; }
+.topbar .brand { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; min-width: 0; }
+.topbar .brand .ko { font-weight: 800; font-size: 13px; letter-spacing: -0.01em; line-height: 1.15; white-space: nowrap; }
+.topbar .brand .en { font-size: 10px; opacity: 0.68; line-height: 1.15; white-space: nowrap; }
 .topbar .brand .en b { color: var(--brand); font-weight: 700; }
 .tablist {
-  display: flex; gap: 0.3rem; overflow-x: auto; flex: 1 1 auto; scrollbar-width: thin;
+  display: flex; align-items: center; gap: 2px; overflow-x: auto; flex: 1 1 auto; min-width: 0;
+  scrollbar-width: none;
 }
-.tablist::-webkit-scrollbar { height: 5px; }
-.tablist::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+.tablist::-webkit-scrollbar { display: none; }
 .tab-btn {
-  appearance: none; border: 1px solid transparent; background: transparent; color: #e7dccb;
-  padding: 0.44rem 0.72rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+  appearance: none; border: 1px solid transparent; background: transparent; color: #cbb69a;
+  padding: 7px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em;
   white-space: nowrap; cursor: pointer; transition: background .15s, color .15s;
 }
-.tab-btn:hover { background: rgba(255,255,255,0.08); }
-.tab-btn.active { background: var(--brand); color: #241608; }
+.tab-btn:hover { color: #f6ece0; background: rgba(255,255,255,0.06); }
+.tab-btn.active { color: #fff; background: rgba(240,129,58,.2); box-shadow: inset 0 0 0 1px rgba(240,129,58,.42); }
+.tab-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.site-home-btn {
+  margin-left: auto; flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border-radius: 8px; color: #cbb69a; font-size: 12px; font-weight: 700;
+  letter-spacing: -0.01em; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,.14);
+}
+.site-home-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.site-home-btn:hover { color: #f6ece0; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.24); }
+.site-home-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .menu-btn {
   display: none; appearance: none; border: 0; background: rgba(255,255,255,0.1); color: #f6ece0;
   width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1rem; flex: 0 0 auto;
 }
 
-/* ── 전체 레이아웃 ── */
-.app-shell { display: flex; min-height: calc(100% - 52px); }
+/* ── 전체 레이아웃 ──
+   PRAS-DER의 .page-shell(1480px 중앙정렬)과 폭을 맞춘다 — 상단바 배경은 PRAS의
+   .site-nav처럼 화면 끝까지 채우고, 그 안쪽 실제 콘텐츠(사이드바+본문)만 1480px로
+   가운데 정렬한다. */
+.app-shell { display: flex; min-height: calc(100% - 52px); max-width: 1480px; margin: 0 auto; width: 100%; }
 .sidebar {
   flex: 0 0 288px; padding: 1.1rem 1rem 2rem; background: var(--surface);
   border-right: 1px solid var(--line); overflow-y: auto;
@@ -242,17 +262,26 @@ a { color: var(--brand-dark); }
 }
 .section-card h4 { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.7rem; }
 .card-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-.card-row > .section-card { flex: 1 1 380px; }
+/* min-width:0만으로는 부족했다 — 이 카드들(표/차트를 담은 section-card)은
+   flex-basis:auto 상태에서 내용물 기준 크기가 줄바꿈된 한 줄의 폭보다 커도
+   shrink가 실제로 발동하지 않아 카드가 부모(.card-row)보다 넓게 그려지고
+   페이지 전체가 가로로 밀리는 문제가 있었다. max-width:100%로 부모 폭을
+   확실한 상한선으로 못박아 해결한다. */
+.card-row > .section-card { flex: 1 1 380px; min-width: 0; max-width: 100%; }
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-md); }
-table.data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+table.data-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
 table.data-table th, table.data-table td {
-  padding: 0.44rem 0.6rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap;
+  padding: 0.34rem 0.44rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap;
 }
 table.data-table td.num, table.data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.data-table thead th {
   position: sticky; top: 0; background: var(--surface); font-weight: 700; color: var(--ink-soft);
-  font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.02em; z-index: 1;
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.01em; z-index: 1;
+  /* 열이 많은 표(고객별 요금 모니터링 등)는 헤더 문구가 데이터 값보다 길어서 표 전체
+     너비를 넓히는 주된 원인이었다 — 헤더만 두 줄로 접히게 허용해 폭을 줄인다.
+     데이터 칸(td)은 그대로 한 줄(nowrap) 유지. */
+  white-space: normal; line-height: 1.25; vertical-align: bottom; min-width: 4.2em;
 }
 table.data-table tbody tr:hover { background: var(--brand-soft); }
 .table-scroll { max-height: 460px; overflow-y: auto; }
@@ -280,7 +309,10 @@ table.data-table tbody tr:hover { background: var(--brand-soft); }
   transform: translate(-50%, -110%); white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 10;
 }
 .chart-tip.show { opacity: 1; }
-svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+/* 차트는 원래 그려진 크기(viewBox) 이상으로는 커지지 않는다(각 차트가 자기 max-width를
+   인라인으로 지정) — 화면이 넓다고 확대되면 오히려 읽기 어려워지기 때문이다.
+   좁은 화면에서는 width:100%로 자연스럽게 줄어든다. */
+svg.chart { display: block; width: 100%; height: auto; overflow: visible; margin: 0 auto; }
 .chart-crosshair { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0; }
 
 .download-btn, .btn {
@@ -306,4 +338,24 @@ footer.app-footer {
   .sidebar.open { transform: translateX(0); }
   .menu-btn { display: inline-flex; align-items: center; justify-content: center; }
   .main { padding: 1rem; }
+}
+
+/* ── 좁은 화면 대응 ──
+   기존에는 .tablist에 min-width:0이 없어 탭이 많을 때 상단바 자체가 화면 밖으로
+   넘치면서 페이지 전체가 가로 스크롤되는 문제가 있었다(위 .tablist{min-width:0}로
+   근본 수정). 아래는 그 상태에서 화면이 더 좁아질 때 각 요소가 자연스럽게
+   줄어들도록 하는 마무리 조정이다. */
+@media (max-width: 640px) {
+  .topbar { padding: 0 14px; gap: 10px; }
+  .topbar .brand .ko { font-size: 12px; }
+  .topbar .brand .en { display: none; }
+  .site-home-btn span { display: none; }
+  .site-home-btn { padding: 7px; }
+  .tab-btn { padding: 7px 10px; font-size: 12px; }
+  .main { padding: 0.9rem 0.8rem; }
+  .section-card { padding: 0.85rem; }
+  .card-row { flex-direction: column; }
+  .card-row > .section-card { flex: 1 1 auto; }
+  .controls-row { gap: 0.5rem; }
+  .control { min-width: 0; flex: 1 1 140px; }
 }

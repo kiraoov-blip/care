@@ -48,7 +48,7 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
   const xAt = (i: number) => margin.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const yAt = (v: number) => margin.top + innerH - ((v - yMin) / (yMax - yMin || 1)) * innerH;
 
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `max-width:${width}px` });
 
   // 격자(recessive) + y축 눈금
   const ticks = 4;
@@ -172,7 +172,7 @@ export function barChart(opts: BarChartOptions): HTMLDivElement {
   const barW = Math.max(6, slot - 10);
   const color = seriesColor(opts.colorIndex ?? 0);
 
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `max-width:${width}px` });
   svg.append(svgEl("line", { x1: margin.left, x2: width - margin.right, y1: margin.top + innerH, y2: margin.top + innerH, stroke: "var(--chart-grid)", "stroke-width": 1 }));
 
   opts.data.forEach((d, i) => {
@@ -207,7 +207,10 @@ export function heatmap(opts: HeatmapOptions): HTMLDivElement {
   const height = margin.top + margin.bottom + opts.rowLabels.length * cell + 24;
   const maxV = Math.max(1, ...opts.matrix.flat());
 
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  // 히트맵은 칸(cell) 하나하나의 크기가 의미를 가지므로(46px 격자) 다른 차트처럼
+  // width:100%로 컨테이너 폭까지 늘리지 않는다 — 원래 크기 그대로 그리고,
+  // 화면이 좁을 때만 wrap의 overflow-x:auto로 가로 스크롤을 허용한다.
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `width:${width}px;max-width:${width}px` });
   opts.colLabels.forEach((c, ci) => {
     const t = svgEl("text", {
       x: margin.left + ci * cell + cell / 2, y: margin.top + 12, "text-anchor": "middle", "font-size": 10, fill: "var(--chart-text)",
