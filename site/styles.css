@@ -1,6 +1,12 @@
 /* CARE-Jeju 정적 사이트 — design/PALETTE.md의 토큰을 그대로 옮겨온다.
    (다크모드는 PALETTE.md엔 명시되지 않았지만, 앱 셸이므로 시스템 설정을 따르도록
-   같은 규칙으로 다크 변형을 추가했다 — 채도·명도만 조정, 색의 역할은 그대로.) */
+   같은 규칙으로 다크 변형을 추가했다 — 채도·명도만 조정, 색의 역할은 그대로.)
+
+   ※ 시스템(휴대폰) 다크모드를 켜 두면 CARE만 어두운 갈색 배경으로 자동 전환되어
+   같은 허브에 있는 PRAS-DER(항상 흰 배경)와 화면이 서로 달라 보인다는 요청으로,
+   prefers-color-scheme 기반 자동 전환은 꺼서 CARE도 PRAS처럼 항상 밝은(light)
+   배경을 쓰도록 고정한다. 다크 팔레트 값 자체는 아래 :root[data-theme="dark"]에
+   남겨 둔다 — 나중에 화면에 수동 다크모드 토글을 추가하면 그대로 재사용 가능. */
 
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
 
@@ -53,45 +59,9 @@
   --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --brand: #f0913f;
-    --brand-dark: #ffa059;
-    --brand-soft: #3a2814;
-    --brand-line: #5c3f1e;
-    --gold: #e8c463;
-    --gold-soft: #3a3013;
-
-    --amber: #d0a828;
-    --amber-dark: #f0d060;
-    --amber-soft: #3a2f0c;
-    --amber-line: #5c4a16;
-
-    --ink: #f3ece0;
-    --ink-soft: #baa88f;
-    --line: #4a3c28;
-    --surface: #241c12;
-    --canvas: #1a140c;
-    --nav-dark: #120d07;
-
-    --green: #6fbf8d;
-    --green-soft: #163425;
-    --red: #ec8271;
-    --red-soft: #3a1e17;
-    --warn-bg: #4a3413;
-
-    --chart-series-1: #f08a52;
-    --chart-series-2: #e8cc66;
-    --chart-series-3: #6ea6ec;
-    --chart-series-4: #c96a9c;
-    --chart-seq-100: #16283f;
-    --chart-seq-400: #3987e5;
-    --chart-seq-700: #b7d3f6;
-    --chart-grid: rgba(243, 236, 224, 0.12);
-
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
-  }
-}
+/* prefers-color-scheme 기반 자동 다크모드 전환은 의도적으로 비활성화했다(위 주석 참고).
+   같은 색상 값은 :root[data-theme="dark"]에 남겨 두어, 화면에 수동 토글이 생기면
+   그 토글이 <html data-theme="dark">를 붙이는 것만으로 바로 동작한다. */
 :root[data-theme="dark"] {
   --brand: #f0913f;
   --brand-dark: #ffa059;
@@ -331,18 +301,20 @@ a { color: var(--brand-dark); }
    성격(개선/주의/경고)에 따라 색을 4가지(brand/mint/gold/red)로 다르게 썼는데,
    화면마다 배너 색이 들쭉날쭉해 보인다는 피드백을 받아 모든 배너를 하나의 색으로
    통일했다 — 이후 그 하나의 색을 초록(민트) 계열에서 따뜻한 노란색(amber) 계열로
-   다시 바꿨다(초록이 어색하다는 피드백). tone 값은 계속 받되(추후 다시 구분할 수
-   있도록 컴포넌트 인터페이스는 남겨둔다) 실제 렌더링 색은 전부 동일하게 맞춘다. */
+   바꿨다가(초록이 어색하다는 피드백), 이번에는 그 노란색 왼쪽 띠·배경 틴트 자체를
+   완전히 없애 달라는 요청으로 다른 카드(.section-card 등)와 같은 무채색 카드로
+   맞췄다. tone 값은 계속 받되(추후 다시 구분할 수 있도록 컴포넌트 인터페이스는
+   남겨둔다) 실제 렌더링 색은 전부 동일하게(무색) 맞춘다. */
 .insight-banner {
   display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem;
-  border-radius: var(--radius-lg); border: 1px solid var(--amber-line); border-left: 4px solid var(--amber);
-  background: var(--amber-soft); box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg); border: 1px solid var(--line);
+  background: var(--surface); box-shadow: var(--shadow-card);
   padding: 1.1rem 1.3rem; margin-bottom: 1.5rem;
 }
 .insight-banner.tone-brand,
 .insight-banner.tone-mint,
 .insight-banner.tone-gold,
-.insight-banner.tone-red { border-left-color: var(--amber); background: var(--amber-soft); }
+.insight-banner.tone-red { border-color: var(--line); background: var(--surface); }
 .insight-body { flex: 1 1 320px; min-width: 0; }
 .insight-headline {
   font-size: 1.18rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.42; color: var(--ink);
