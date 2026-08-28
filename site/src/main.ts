@@ -124,14 +124,26 @@ async function boot(): Promise<void> {
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 11.4 12 4.4l8.4 7"/><path d="M5.7 10.2V19a1 1 0 0 0 1 1H9.6v-5.3h4.8V20h2.9a1 1 0 0 0 1-1v-8.8"/></svg><span>처음으로</span>',
   });
   homeBtn.setAttribute("aria-label", "처음 화면으로");
-  const topbar = el("div", { className: "topbar" }, [
-    el("div", { className: "brand" }, [
-      el("div", { className: "ko", text: "제주 TOU 요금·에너지관리 시뮬레이터" }),
-      el("div", { className: "en", html: '<b>CARE-Jeju</b> Customer Analytics, Rate Recommendation &amp; Energy Management' }),
+
+  // ── 상단 2단 구조(PRAS-DER와 통일) ──
+  // PRAS는 (1) 얇은 다크 네비게이션 바 + (2) 그 아래 큰 그라디언트 히어로 배너(제목·부제)
+  // 로 이루어진 2단 헤더를 쓴다(app/globals.css .site-nav + .hero). CARE는 지금까지
+  // 이 둘을 하나의 52px 바에 욱여넣고 있었다 — 브랜드 텍스트가 작고 탭과 나란히 있어
+  // 페이지 정체성이 잘 드러나지 않았다. 아래에서 PRAS와 동일한 2단 구조로 나눈다
+  // (색만 CARE 고유 팔레트를 쓰고, 배치·크기·여백은 그대로 맞춘다).
+  const brandLogo = el("a", { className: "site-brand", href: "/care/" }, [
+    document.createTextNode("CARE"),
+    el("span", { text: "JEJU" }),
+  ]);
+  const nav = el("div", { className: "topbar" }, [brandLogo, tablist, homeBtn, menuBtn]);
+
+  const hero = el("div", { className: "hero" }, [
+    el("div", { className: "hero-inner" }, [
+      el("h1", { text: "제주 TOU 요금·에너지관리 시뮬레이터(CARE - Jeju)" }),
+      el("p", {
+        text: "Customer Analytics, Rate Recommendation & Energy Management - 제주 TOU 요금·에너지관리",
+      }),
     ]),
-    tablist,
-    homeBtn,
-    menuBtn,
   ]);
 
   // ── 사이드바 ──
@@ -254,7 +266,7 @@ async function boot(): Promise<void> {
     className: "app-footer",
     text: "CARE-Jeju 시뮬레이터는 개념검증·내부 의사결정 지원도구이며, 실제 요금상품 출시나 배전계통 운전명령에 직접 사용하는 운영시스템이 아닙니다. 자세한 한계는 «방법론·한계» 탭을 참고하세요.",
   });
-  root.append(topbar, shell, footer);
+  root.append(nav, hero, shell, footer);
 
   setActiveTab(TABS[0].id);
 }
