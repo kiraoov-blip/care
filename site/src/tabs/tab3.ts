@@ -23,8 +23,10 @@ import {
   controlsRow,
   downloadCsvButton,
   sectionTitle,
+  subheading,
   emptyNote,
   roundForDisplay,
+  insightBanner,
 } from "../ui.js";
 import { lineChart, type LineSeries } from "../charts.js";
 import { fmtWon, fmtKwh, fmtPct, usagePatternLabel, peakManagementLabel } from "../../../lib/format.js";
@@ -188,6 +190,20 @@ export function renderTab3(root: HTMLElement, ctx: AppContext): void {
 function renderAnnualDiagnosis(root: HTMLElement, ctx: AppContext, cid: string, r: EnrichedCustomer): void {
   const { raw, state } = ctx;
 
+  // ── 핵심 결과 배너: 이 고객의 연간 진단 결론을 표·차트보다 먼저 한 문장으로 ──
+  const changeRate = r.연간사용량증감률;
+  const annualRecCustomer = state.tariffDynamic.annualCustomer.filter((a) => a.고객ID === cid);
+  const rec25 = annualRecCustomer.find((a) => a.연도 === 2025)?.연간추천요금제;
+  root.append(
+    insightBanner({
+      tone: changeRate < 0 ? "mint" : "brand",
+      headline: `이 고객의 2025년 사용량은 전년 대비 ${Math.abs(changeRate * 100).toFixed(1)}% ${
+        changeRate < 0 ? "감소" : "증가"
+      }했으며, 2025년 연간 추천 요금제는 "${rec25 ?? "자료 없음"}"입니다.`,
+      detail: `현재 소속 그룹: ${String(r["2024군집"])} → ${String(r["2025군집"])}`,
+    })
+  );
+
   // 월별 사용량 추이(2024 vs 2025)
   const cm = raw.monthly.filter((m) => m.고객ID === cid);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -203,11 +219,11 @@ function renderAnnualDiagnosis(root: HTMLElement, ctx: AppContext, cid: string, 
   root.append(lineChart({ xLabels: months, series: cmSeries, xTickEvery: 1, yFormat: fmtKwh }));
 
   // 연간 요금 및 연간 추천요금제
-  root.append(el("h3", { text: "연간 요금 및 연간 추천요금제" }));
+  root.append(...subheading("연간 요금 및 연간 추천요금제"));
   root.append(annualBillTable(state.tariffDynamic.annualCustomer, cid));
 
   // 월별 추천요금제 변화
-  root.append(el("h3", { text: "월별 추천요금제 변화" }));
+  root.append(...subheading("월별 추천요금제 변화"));
   root.append(monthlyRecommendationPivotTable(state.tariffDynamic.monthlyCustomer, cid));
 
   // 대표 계절 + 주중/주말 부하곡선
@@ -423,21 +439,24 @@ function renderMonthlyControl(root: HTMLElement, ctx: AppContext, cid: string): 
     ])
   );
 
-  root.append(el("h3", { text: "4개 요금제 적용 시 예상 납부액 비교" }));
+  // ── 핵심 결과 배너: 이번 달 예상 요금·추천 요금제 절감액을 표보다 먼저 ──
+  const saving = Math.max(currentBill - bills[rec], 0.0);
+  root.append(
+    insightBanner({
+      tone: saving > 0 ? "mint" : "gold",
+      headline:
+        rec !== currentPlan && saving > 0
+          ? `현재 사용 추세대로면 "${rec}"로 바꿀 때 현재 요금제보다 월 약 ${fmtWon(saving)} 절감될 것으로 예상됩니다.`
+          : "현재 사용 추세에서는 지금 적용 중인 요금제가 비용상 최저이거나 추천 요금제와 동일합니다.",
+      detail: `월말 예상 사용량 ${fmtKwh(f.forecast)} 기준, 현재 요금제(${currentPlan}) 예상 납부액은 ${fmtWon(
+        currentBill
+      )}입니다.`,
+    })
+  );
+
+  root.append(...subheading("4개 요금제 적용 시 예상 납부액 비교"));
   const comparison = tariffComparisonTable(bills, currentPlan);
   root.append(comparisonTable(comparison));
-
-  const saving = Math.max(currentBill - bills[rec], 0.0);
-  if (rec !== currentPlan && saving > 0) {
-    root.append(
-      alertBox(
-        "success",
-        `현재 사용 추세에서는 <b>${rec}</b> 적용 시 현재 요금제보다 월 약 <b>${fmtWon(saving)}</b> 절감될 것으로 예상됩니다.`
-      )
-    );
-  } else {
-    root.append(alertBox("info", "현재 사용 추세에서는 현재 적용 요금제가 비용상 최저이거나 추천요금제와 동일합니다."));
-  }
 
   // ── 관리 목표 ──
   const targetLabels: [string, string, string, string] = isSubscription
@@ -621,7 +640,7 @@ function renderMonthlyControl(root: HTMLElement, ctx: AppContext, cid: string): 
   );
 
   // ── 주중·주말 평균 부하곡선: 관리 전후 ──
-  root.append(el("h3", { text: "주중·주말 평균 부하곡선: 관리 전후" }));
+  root.append(...subheading("주중·주말 평균 부하곡선: 관리 전후"));
   root.append(
     radioField(
       "",

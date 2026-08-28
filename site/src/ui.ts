@@ -257,8 +257,61 @@ export function sectionTitle(text: string, sub?: string): (Node)[] {
   if (sub) nodes.push(el("div", { className: "section-sub", text: sub }));
   return nodes;
 }
+/** 탭 안에서 여러 분석 블록을 나눌 때 쓰는 하위 제목(원본 곳곳의 el("h3"/"h4", {text})를
+ * 대체) — sectionTitle(탭 최상단, 1회)보다 한 단계 작고, section-card 안 h4보다 크다.
+ * 번호(step)를 주면 "1. 연간 추천 요금제"처럼 순서가 있는 분석 절차를 시각적으로도
+ * 드러낸다(장식이 아니라 실제 순서 정보가 있을 때만 사용). */
+export function subheading(text: string, opts: { step?: number; sub?: string } = {}): (Node)[] {
+  const nodes: Node[] = [
+    el("div", { className: "subheading" }, [
+      ...(opts.step !== undefined ? [el("span", { className: "subheading-step", text: String(opts.step) })] : []),
+      el("span", { text }),
+    ]),
+  ];
+  if (opts.sub) nodes.push(el("div", { className: "section-sub", text: opts.sub }));
+  return nodes;
+}
 export function emptyNote(text: string): HTMLDivElement {
   return el("div", { className: "empty-note", text });
+}
+
+// ── 핵심 결과 배너("분석 결과가 잘 드러나는" 화면을 위한 핵심 컴포넌트) ──────────
+// 각 탭 최상단, 지표 카드보다도 먼저 "이 화면에서 가장 중요한 결론 한 문장"을
+// 굵고 크게 보여준다. Streamlit 원본에는 없던 요소이지만, 표·차트를 직접 읽어야만
+// 알 수 있던 결론을 첫눈에 보이도록 하는 것이 이번 재구성의 핵심 목표다.
+export type InsightTone = "brand" | "mint" | "gold" | "red";
+export interface InsightStat {
+  label: string;
+  value: string;
+}
+export interface InsightSpec {
+  tone?: InsightTone; // 결론의 성격(개선=mint, 주의=brand/gold, 경고=red). 기본값 brand.
+  headline: string; // 핵심 결론 한 문장(구체적 수치 포함, 예: "...전년 대비 3.2% 감소했습니다")
+  detail?: string; // 보조 설명 한 문장(선택)
+  stats?: InsightStat[]; // 헤드라인을 뒷받침하는 소수의 숫자 칩(2~4개 권장)
+}
+export function insightBanner(spec: InsightSpec): HTMLDivElement {
+  const tone = spec.tone ?? "brand";
+  const banner = el("div", { className: `insight-banner tone-${tone}` });
+  const body = el("div", { className: "insight-body" }, [
+    el("div", { className: "insight-headline", text: spec.headline }),
+    ...(spec.detail ? [el("div", { className: "insight-detail", text: spec.detail })] : []),
+  ]);
+  banner.append(body);
+  if (spec.stats && spec.stats.length) {
+    const statRow = el(
+      "div",
+      { className: "insight-stats" },
+      spec.stats.map((s) =>
+        el("div", { className: "insight-stat" }, [
+          el("span", { className: "insight-stat-value", text: s.value }),
+          el("span", { className: "insight-stat-label", text: s.label }),
+        ])
+      )
+    );
+    banner.append(statRow);
+  }
+  return banner;
 }
 
 export { roundForDisplay };

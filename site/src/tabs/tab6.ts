@@ -26,6 +26,9 @@ import {
   controlsRow,
   downloadCsvButton,
   roundForDisplay,
+  sectionTitle,
+  subheading,
+  insightBanner,
 } from "../ui.js";
 import { lineChart } from "../charts.js";
 import { SEASON_MONTHS, type Season, aggregatePortfolioProfile } from "../../../lib/timeseries.js";
@@ -120,7 +123,14 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
   clear(root);
   const { state } = ctx;
 
-  root.append(el("h3", { text: "100 가구 무작위 추출 분석" }));
+  root.append(
+    ...sectionTitle(
+      "계통영향 분석 및 제어 시뮬레이션",
+      "712명 중 100가구를 무작위로 추출해 합산 부하곡선을 만들고, 변압기 목표 운전한도와 직접제어 참여율에 따른 피크 감축 효과를 시험합니다."
+    )
+  );
+
+  root.append(...subheading("100 가구 무작위 추출 분석"));
 
   // ── c1,c2,c3,c4 = st.columns(4) ──
   const seedControl = numberField(
@@ -263,6 +273,27 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
   const base = targetYear === 2024 ? base24 : base25;
   const result = optimizeTransformerProfile(base, limitPct / 100, participationPct / 100);
 
+  root.append(...subheading("변압기 목표 운전한도 대응 시뮬레이션"));
+
+  // ── 핵심 결과 배너: 제어 시뮬레이션의 결론(피크 감축 효과)을 지표 카드보다 먼저 ──
+  const peakReduction = result.peakBefore > 0 ? (result.peakBefore - result.peakAfter) / result.peakBefore : 0;
+  const stillOverLimit = result.hoursAfter > 0;
+  root.append(
+    insightBanner({
+      tone: stillOverLimit ? "gold" : "mint",
+      headline: `직접제어 참여율 ${participationPct}%, 목표 운전한도 ${limitPct}% 설정 시 피크가 ${fmtNum1(
+        result.peakBefore
+      )}kW에서 ${fmtNum1(result.peakAfter)}kW로 ${(peakReduction * 100).toFixed(1)}% 감소합니다.`,
+      detail: stillOverLimit
+        ? `그래도 하루 중 ${result.hoursAfter}시간은 목표 운전한도를 초과합니다(제어 전 ${result.hoursBefore}시간).`
+        : `목표 운전한도를 초과하는 시간이 ${result.hoursBefore}시간에서 0시간으로 모두 해소됩니다.`,
+      stats: [
+        { value: `${fmtNum1(result.shifted)}kWh`, label: "시간이동량" },
+        { value: `${fmtNum1(result.reduced)}kWh`, label: "실제 감축량" },
+      ],
+    })
+  );
+
   root.append(
     metricGrid([
       { label: "제어 전 피크", value: `${fmtNum1(result.peakBefore)}kW` },
@@ -296,6 +327,7 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
     })
   );
 
+  root.append(...subheading("100가구 표본 고객목록"));
   const psColumns: ColumnSpec<PortfolioRow>[] = [
     { key: "고객ID", label: "고객ID", kind: "text" },
     { key: "2024년 연간 사용량(kWh)", label: "2024년 연간 사용량(kWh)", kind: "number" },

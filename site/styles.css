@@ -217,10 +217,32 @@ a { color: var(--brand-dark); }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
-/* ── 컴포넌트 ── */
-.section-title { font-size: 1.12rem; font-weight: 800; margin: 1.6rem 0 0.7rem; }
+/* ── 컴포넌트 ──
+   타이포그래피 위계를 3단으로 명확히 나눈다: section-title(탭 최상단, 탭마다 1회) >
+   subheading(탭 안의 분석 블록 구분) > section-card h4(카드 내부 소제목). 각 단계의
+   크기·굵기·색 차이를 뚜렷하게 벌려서 "지금 어느 수준의 제목을 보고 있는지"가
+   훑어보기만 해도 파악되도록 한다(기존에는 세 단계가 1.12rem/1rem/0.95rem으로
+   거의 붙어 있어 위계가 잘 드러나지 않았다). */
+.section-title {
+  font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em;
+  margin: 2.2rem 0 0.3rem; padding-bottom: 0.6rem; border-bottom: 2px solid var(--brand-line);
+}
 .section-title:first-child { margin-top: 0; }
-.section-sub { font-size: 0.85rem; color: var(--ink-soft); margin-top: -0.4rem; margin-bottom: 0.9rem; }
+.section-sub { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.5rem; margin-bottom: 1.1rem; line-height: 1.6; }
+.section-title + .section-sub { margin-top: 0.6rem; }
+
+.subheading {
+  display: flex; align-items: center; gap: 0.55rem;
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; color: var(--ink);
+  margin: 2rem 0 0.15rem;
+}
+.subheading:first-child { margin-top: 0; }
+.subheading-step {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5rem; height: 1.5rem; border-radius: 999px; flex: 0 0 auto;
+  background: var(--brand); color: #fff; font-size: 0.78rem; font-weight: 800;
+}
+.subheading + .section-sub { margin-top: 0.3rem; }
 
 .controls-row { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-end; margin-bottom: 1rem; }
 .control { display: flex; flex-direction: column; gap: 0.28rem; min-width: 140px; }
@@ -245,22 +267,59 @@ a { color: var(--brand-dark); }
 .checkbox-grid input { accent-color: var(--mint); }
 .checkbox-grid label.checked { border-color: var(--mint); background: var(--mint-soft); }
 
-.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem; margin-bottom: 1.1rem; }
+/* ── 핵심 결과 배너 ──
+   각 탭에서 지표 카드보다도 먼저 나오는, 그 화면의 결론 한 문장. 톤(tone-*)에 따라
+   좌측 색 띠와 배경 틴트만 바뀌고 구조는 동일하다 — brand=주의 환기, mint=긍정적
+   변화, gold=중립/참고, red=경고. 카드보다 눈에 먼저 들어오도록 큰 헤드라인 폰트와
+   왼쪽 4px 색 띠를 쓴다(카드형 UI에서 "먼저 읽어야 할 것"을 형태로 구분하는 패턴). */
+.insight-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem;
+  border-radius: var(--radius-lg); border: 1px solid var(--line); border-left: 4px solid var(--brand);
+  background: var(--surface); box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.3rem; margin-bottom: 1.3rem;
+}
+.insight-banner.tone-brand { border-left-color: var(--brand); background: var(--brand-soft); }
+.insight-banner.tone-mint { border-left-color: var(--mint); background: var(--mint-soft); }
+.insight-banner.tone-gold { border-left-color: var(--gold); background: var(--gold-soft); }
+.insight-banner.tone-red { border-left-color: var(--red); background: var(--red-soft); }
+.insight-body { flex: 1 1 320px; min-width: 0; }
+.insight-headline {
+  font-size: 1.18rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.42; color: var(--ink);
+  text-wrap: balance;
+}
+.insight-detail { font-size: 0.86rem; color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.55; }
+.insight-stats { display: flex; flex-wrap: wrap; gap: 1.4rem; flex: 0 1 auto; }
+.insight-stat { display: flex; flex-direction: column; gap: 0.1rem; min-width: 84px; }
+.insight-stat-value {
+  font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.insight-stat-label { font-size: 0.72rem; color: var(--ink-soft); font-weight: 600; }
+
+/* metric-card: 숫자(value)가 가장 먼저 눈에 들어오도록 크기를 키우고 카드 간 여백을
+   넓혔다. delta에는 위/아래 화살표를 붙여 색만으로 방향을 구분하지 않게 한다
+   (dataviz 스킬의 "색만으로 의미를 전달하지 않는다" 원칙과 동일한 이유). */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.85rem; margin-bottom: 1.3rem; }
 .metric-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
-  padding: 0.8rem 0.9rem; box-shadow: var(--shadow-card);
+  padding: 0.95rem 1.05rem; box-shadow: var(--shadow-card);
 }
-.metric-card .label { font-size: 0.74rem; color: var(--ink-soft); font-weight: 600; margin-bottom: 0.3rem; }
-.metric-card .value { font-size: 1.28rem; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.metric-card .delta { font-size: 0.76rem; margin-top: 0.2rem; font-weight: 700; }
+.metric-card .label { font-size: 0.75rem; color: var(--ink-soft); font-weight: 600; margin-bottom: 0.4rem; }
+.metric-card .value { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.metric-card .delta { font-size: 0.78rem; margin-top: 0.3rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.2rem; }
 .metric-card .delta.up { color: var(--brand-dark); }
 .metric-card .delta.down { color: var(--mint-dark); }
+.metric-card .delta.up::before { content: "▲"; font-size: 0.65em; }
+.metric-card .delta.down::before { content: "▼"; font-size: 0.65em; }
 
 .section-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
-  padding: 1rem 1.1rem; box-shadow: var(--shadow-card); margin-bottom: 1.1rem;
+  padding: 1.1rem 1.2rem; box-shadow: var(--shadow-card); margin-bottom: 1.1rem;
 }
-.section-card h4 { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.7rem; }
+.section-card h4 {
+  font-size: 0.92rem; font-weight: 800; margin-bottom: 0.85rem; padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line); color: var(--ink);
+}
 .card-row { display: flex; gap: 1rem; flex-wrap: wrap; }
 /* min-width:0만으로는 부족했다 — 이 카드들(표/차트를 담은 section-card)은
    flex-basis:auto 상태에서 내용물 기준 크기가 줄바꿈된 한 줄의 폭보다 커도
@@ -283,6 +342,7 @@ table.data-table thead th {
      데이터 칸(td)은 그대로 한 줄(nowrap) 유지. */
   white-space: normal; line-height: 1.25; vertical-align: bottom; min-width: 4.2em;
 }
+table.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--line) 22%, transparent); }
 table.data-table tbody tr:hover { background: var(--brand-soft); }
 .table-scroll { max-height: 460px; overflow-y: auto; }
 
@@ -358,4 +418,12 @@ footer.app-footer {
   .card-row > .section-card { flex: 1 1 auto; }
   .controls-row { gap: 0.5rem; }
   .control { min-width: 0; flex: 1 1 140px; }
+  .section-title { font-size: 1.22rem; margin-top: 1.6rem; }
+  .subheading { font-size: 0.96rem; margin-top: 1.5rem; }
+  .insight-banner { padding: 0.9rem 1rem; gap: 0.9rem; }
+  .insight-headline { font-size: 1.02rem; }
+  .insight-stats { gap: 1rem; width: 100%; }
+  .insight-stat { min-width: 72px; }
+  .insight-stat-value { font-size: 1.08rem; }
+  .metric-card .value { font-size: 1.3rem; }
 }

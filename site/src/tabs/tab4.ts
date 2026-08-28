@@ -6,7 +6,16 @@
  */
 
 import type { AppContext } from "../main.js";
-import { clear, metricGrid, type MetricSpec, renderTable, type ColumnSpec, sectionTitle } from "../ui.js";
+import {
+  clear,
+  metricGrid,
+  type MetricSpec,
+  renderTable,
+  type ColumnSpec,
+  sectionTitle,
+  subheading,
+  insightBanner,
+} from "../ui.js";
 import { heatmap } from "../charts.js";
 import type { ClusterSummaryRow, ClusterTransitionRow } from "../data.js";
 import { fmtPct } from "../../../lib/format.js";
@@ -30,11 +39,24 @@ export function renderTab4(root: HTMLElement, ctx: AppContext): void {
 
   root.append(...sectionTitle(`공통 기준 ${clusterCount}개 그룹과 2024→2025 이동`));
 
-  root.append(clusterSummaryTable(clusters.summary));
-
   const stability =
     clusters.wide.length > 0 ? clusters.wide.filter((w) => w.군집유지여부 === "유지").length / clusters.wide.length : 0;
   const movedCount = clusters.wide.filter((w) => w.군집유지여부 === "이동").length;
+
+  // ── 핵심 결과 배너: 그룹 유지율과 이동 규모를 표·히트맵보다 먼저 한 문장으로 ──
+  root.append(
+    insightBanner({
+      tone: stability >= 0.7 ? "mint" : stability >= 0.5 ? "gold" : "brand",
+      headline: `2024년 그룹을 유지한 고객은 전체의 ${fmtPct(stability)}이며, ${movedCount.toLocaleString(
+        "ko-KR"
+      )}명은 2025년에 다른 그룹으로 이동했습니다.`,
+      detail: `공통 기준 ${clusterCount}개 그룹으로 분류한 결과이며, 그룹 수를 바꾸면 이동 규모도 달라질 수 있습니다.`,
+    })
+  );
+
+  root.append(...subheading("그룹별 연도별 요약"));
+  root.append(clusterSummaryTable(clusters.summary));
+
   const metrics: MetricSpec[] = [
     { label: "동일 그룹 유지율", value: fmtPct(stability) },
     { label: "그룹 이동 고객", value: `${movedCount.toLocaleString("ko-KR")}명` },
@@ -42,8 +64,10 @@ export function renderTab4(root: HTMLElement, ctx: AppContext): void {
   ];
   root.append(metricGrid(metrics));
 
+  root.append(...subheading("2024→2025년 그룹 이동 현황", { sub: "가로축은 2025년 그룹, 세로축은 2024년 그룹입니다. 진한 칸일수록 해당 이동에 속한 고객이 많습니다." }));
   root.append(transitionHeatmap(clusters.transition));
 
+  root.append(...subheading("그룹 이동 상세"));
   root.append(transitionDetailTable(clusters.transition));
 }
 

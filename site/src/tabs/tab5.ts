@@ -19,6 +19,9 @@ import {
   controlsRow,
   alertBox,
   downloadCsvButton,
+  sectionTitle,
+  subheading,
+  insightBanner,
 } from "../ui.js";
 import { barChart, type BarDatum } from "../charts.js";
 import {
@@ -50,12 +53,11 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   const { tariffDynamic } = state;
   const rates = state.fee.surchargeRates!;
 
-  root.append(el("h3", { text: "연간·월별 추천요금제와 예측성능" }));
   root.append(
-    el("div", {
-      className: "section-sub",
-      text: "사이드바의 기본형·프리미엄형 구독료, 제공량 및 초과단가를 바꾸면 아래 추천 고객 수와 요금이 즉시 다시 계산됩니다.",
-    })
+    ...sectionTitle(
+      "요금분석 및 추천",
+      "사이드바의 기본형·프리미엄형 구독료, 제공량 및 초과단가를 바꾸면 아래 추천 고객 수와 요금이 즉시 다시 계산됩니다."
+    )
   );
   root.append(
     alertBox(
@@ -67,7 +69,9 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   );
 
   // ── 1. 연간 추천 요금제 ──
-  root.append(el("h3", { text: "1. 연간 추천 요금제" }));
+  root.append(...subheading("연간 추천 요금제", { step: 1 }));
+
+  // 핵심 결과 배너는 연도 라디오보다 뒤, annualCounts 계산 이후에 넣는다(아래 참고).
   root.append(annualSummaryTable(tariffDynamic.annualSummary));
 
   root.append(
@@ -87,6 +91,20 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
 
   const annualSelected = tariffDynamic.annualCustomer.filter((a) => a.연도 === annualYear);
   const annualCounts = planCounts(annualSelected, (r) => r.연간추천요금제);
+  const annualTop = PLAN_ORDER.reduce((a, b) => (annualCounts[b] > annualCounts[a] ? b : a));
+  const annualTotal = annualSelected.length || 1;
+
+  root.append(
+    insightBanner({
+      tone: "brand",
+      headline: `${annualYear}년 연간 기준으로는 전체 ${annualTotal.toLocaleString(
+        "ko-KR"
+      )}명 중 ${annualCounts[annualTop].toLocaleString("ko-KR")}명(${((annualCounts[annualTop] / annualTotal) * 100).toFixed(
+        1
+      )}%)에게 "${annualTop}" 요금제가 가장 많이 추천됩니다.`,
+      detail: `2024→2025년 연간 추천 요금제를 그대로 유지한 고객은 ${fmtPct(tariffDynamic.annualStability)}입니다.`,
+    })
+  );
 
   root.append(
     metricGrid([
@@ -152,11 +170,11 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
     )
   );
 
-  root.append(el("h4", { text: "연간 추천 요금제 조정·변경" }));
+  root.append(...subheading("연간 추천 요금제 조정·변경"));
   root.append(annualTransitionTable(tariffDynamic.annualTransition));
 
   // ── 2. 월별 추천 요금제 ──
-  root.append(el("h3", { text: "2. 월별 추천 요금제" }));
+  root.append(...subheading("월별 추천 요금제", { step: 2 }));
   const monthlyYearControl = selectField(
     "월별 추천 분석연도",
     [
@@ -228,7 +246,7 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   );
 
   // ── 3. 월말 사용량 예측성능 ──
-  root.append(el("h3", { text: "3. 월말 사용량 예측성능" }));
+  root.append(...subheading("월말 사용량 예측성능", { step: 3 }));
   root.append(forecastPerformanceTable(state.enriched));
 }
 

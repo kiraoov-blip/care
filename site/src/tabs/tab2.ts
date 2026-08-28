@@ -15,6 +15,7 @@ import {
   sectionTitle,
   emptyNote,
   roundForDisplay,
+  insightBanner,
   type ColumnSpec,
 } from "../ui.js";
 import { fmtWon } from "../../../lib/format.js";
@@ -240,9 +241,33 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
     if (clusterFilter !== "전체") show = show.filter((r) => r.그룹 === clusterFilter);
     show = sortShow(show, sortKey);
 
-    // ── c1..c6 = st.columns(6) : 지표 카드 ──
+    // ── 핵심 결과 배너: 조건에 맞는 고객 중 가장 많이 추천되는 요금제와 평균 절감액을
+    // 지표 카드보다 먼저 한 문장으로 보여준다 ──
     const countByPlan = (plan: PlanName) => show.filter((r) => r.추천요금제 === plan).length;
     const avgSaving = mean(show.map((r) => r["TOU대비절감(원)"]));
+    const planCounts = [...new Set(show.map((r) => r.추천요금제 as PlanName))].map((plan) => ({
+      plan,
+      count: countByPlan(plan),
+    }));
+    planCounts.sort((a, b) => b.count - a.count);
+    const top = planCounts[0];
+    root.append(
+      insightBanner({
+        tone: avgSaving > 0 ? "mint" : "gold",
+        headline: top
+          ? `현재 조건에서는 전체 ${show.length.toLocaleString("ko-KR")}명 중 ${top.count.toLocaleString(
+              "ko-KR"
+            )}명(${((top.count / show.length) * 100).toFixed(1)}%)에게 "${top.plan}" 요금제가 가장 많이 추천됩니다.`
+          : "표시할 추천 결과가 없습니다.",
+        detail:
+          avgSaving > 0
+            ? `제주 TOU 대비 평균 ${fmtWon(avgSaving)} 절감이 예상됩니다.`
+            : undefined,
+        stats: [{ value: fmtWon(avgSaving), label: "평균 절감가능액(TOU 대비)" }],
+      })
+    );
+
+    // ── c1..c6 = st.columns(6) : 지표 카드 ──
     root.append(
       metricGrid([
         { label: "전체 고객", value: `${show.length.toLocaleString("ko-KR")}명` },

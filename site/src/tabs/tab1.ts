@@ -14,9 +14,11 @@ import {
   sectionCard,
   cardRow,
   sectionTitle,
+  subheading,
   controlsRow,
   selectField,
   radioField,
+  insightBanner,
 } from "../ui.js";
 import { lineChart, barChart, type LineSeries, type BarDatum } from "../charts.js";
 import type { OverallMonthlyRow, MonthlyChangeRow, OverallProfileRow } from "../data.js";
@@ -36,8 +38,30 @@ export function renderTab1(root: HTMLElement, ctx: AppContext): void {
   const { raw, state } = ctx;
   const S = raw.stats;
 
-  // ── 지표 카드 5개 ──
+  root.append(...sectionTitle("2024~2025년 사용량 분석"));
+
+  // ── 핵심 결과 배너: 이 화면의 결론을 지표 카드보다 먼저, 한 문장으로 보여준다 ──
   const changeRate = S.연평균증감률;
+  const isDecrease = changeRate < 0;
+  root.append(
+    insightBanner({
+      tone: isDecrease ? "mint" : "brand",
+      headline: `2025년 고객당 연평균 사용량은 전년 대비 ${Math.abs(changeRate * 100).toFixed(1)}% ${
+        isDecrease ? "감소" : "증가"
+      }했습니다.`,
+      detail: `2개년 모두 자료가 있는 핵심 고객 ${S["2개년핵심고객수"].toLocaleString(
+        "ko-KR"
+      )}명 기준이며, 같은 그룹을 유지한 고객은 ${fmtPct(S.군집유지율)}, 추천 요금제를 유지한 고객은 ${fmtPct(
+        state.tariffDynamic.annualStability
+      )}입니다.`,
+      stats: [
+        { value: fmtKwh(S["2024연평균kWh"]), label: "2024년 연평균" },
+        { value: fmtKwh(S["2025연평균kWh"]), label: "2025년 연평균" },
+      ],
+    })
+  );
+
+  // ── 지표 카드 5개 ──
   const metrics: MetricSpec[] = [
     { label: "분석 대상 고객", value: `${S["2개년핵심고객수"].toLocaleString("ko-KR")}명` },
     { label: "2024년 연평균 사용량", value: fmtKwh(S["2024연평균kWh"]) },
@@ -61,7 +85,7 @@ export function renderTab1(root: HTMLElement, ctx: AppContext): void {
   root.append(cardRow([leftCard, rightCard]));
 
   // ── 계절·주중/주말 평균 부하곡선 ──
-  root.append(...sectionTitle("계절·주중/주말 평균 부하곡선"));
+  root.append(...subheading("계절·주중/주말 평균 부하곡선"));
   const seasonControl = selectField(
     "계절",
     SEASON_KEYS.map((k) => ({ value: k, label: k })),
