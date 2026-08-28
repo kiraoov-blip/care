@@ -207,10 +207,14 @@ a { color: var(--brand-dark); }
 .hero-inner p { margin: 0; color: #e6cfae; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.45; }
 
 /* ── 전체 레이아웃 ──
-   PRAS-DER의 워크스페이스(.dashboard-layout 계열)는 폭 상한 없이 화면 끝까지 내용을
-   채우고 좌우 20px(모바일 8px) 패딩만 둔다 — 사이드바+본문을 1480px로 가둬 넓은
-   화면에서 좌우에 빈 여백이 남던 이전 구조를 없앤다. */
-.app-shell { display: flex; min-height: calc(100% - 52px); width: 100%; }
+   실제 PRAS-DER 구조를 다시 확인한 결과, 상단 네비게이션·히어로 배너만 화면 끝까지
+   edge-to-edge로 배경을 채우고(위 .topbar/.hero), 실제 본문(.page-shell.workspace)은
+   PRAS도 폭 상한이 있다 — width:min(1480px, calc(100% - 48px)), 그 안쪽에 좌우 20px
+   패딩(app/globals.css .page-shell{...} + .page-shell.workspace{...}). 즉 넓은 화면에서
+   본문이 화면 끝까지 무한정 넓어지는 게 아니라 PRAS도 1480px에서 멈춘다 — 지난 수정에서
+   이 폭 상한을 아예 없앤 것이 오히려 PRAS보다 CARE 본문이 더 넓어 보이는 원인이었다.
+   같은 공식으로 되돌리고, 그 안의 사이드바·본문 좌우 패딩(20px)은 유지한다. */
+.app-shell { display: flex; min-height: calc(100% - 52px); width: min(1480px, 100%); margin: 0 auto; }
 .sidebar {
   flex: 0 0 272px; padding: 1.1rem 1rem 2rem 20px; background: var(--surface);
   border-right: 1px solid var(--line); overflow-y: auto;
@@ -292,20 +296,21 @@ a { color: var(--brand-dark); }
 .checkbox-grid label.checked { border-color: var(--mint); background: var(--mint-soft); }
 
 /* ── 핵심 결과 배너 ──
-   각 탭에서 지표 카드보다도 먼저 나오는, 그 화면의 결론 한 문장. 톤(tone-*)에 따라
-   좌측 색 띠와 배경 틴트만 바뀌고 구조는 동일하다 — brand=주의 환기, mint=긍정적
-   변화, gold=중립/참고, red=경고. 카드보다 눈에 먼저 들어오도록 큰 헤드라인 폰트와
-   왼쪽 4px 색 띠를 쓴다(카드형 UI에서 "먼저 읽어야 할 것"을 형태로 구분하는 패턴). */
+   각 탭에서 지표 카드보다도 먼저 나오는, 그 화면의 결론 한 문장. 처음에는 결과의
+   성격(개선/주의/경고)에 따라 색을 4가지(brand/mint/gold/red)로 다르게 썼는데,
+   화면마다 배너 색이 들쭉날쭉해 보인다는 피드백을 받아 모든 배너를 하나의 색(민트
+   계열)으로 통일한다 — tone 값은 계속 받되(추후 다시 구분할 수 있도록 컴포넌트
+   인터페이스는 남겨둔다) 실제 렌더링 색은 전부 동일하게 맞춘다. */
 .insight-banner {
   display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem;
-  border-radius: var(--radius-lg); border: 1px solid var(--line); border-left: 4px solid var(--brand);
-  background: var(--surface); box-shadow: var(--shadow-card);
-  padding: 1.1rem 1.3rem; margin-bottom: 1.3rem;
+  border-radius: var(--radius-lg); border: 1px solid var(--mint-line); border-left: 4px solid var(--mint);
+  background: var(--mint-soft); box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.3rem; margin-bottom: 1.5rem;
 }
-.insight-banner.tone-brand { border-left-color: var(--brand); background: var(--brand-soft); }
-.insight-banner.tone-mint { border-left-color: var(--mint); background: var(--mint-soft); }
-.insight-banner.tone-gold { border-left-color: var(--gold); background: var(--gold-soft); }
-.insight-banner.tone-red { border-left-color: var(--red); background: var(--red-soft); }
+.insight-banner.tone-brand,
+.insight-banner.tone-mint,
+.insight-banner.tone-gold,
+.insight-banner.tone-red { border-left-color: var(--mint); background: var(--mint-soft); }
 .insight-body { flex: 1 1 320px; min-width: 0; }
 .insight-headline {
   font-size: 1.18rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.42; color: var(--ink);
@@ -323,7 +328,7 @@ a { color: var(--brand-dark); }
 /* metric-card: 숫자(value)가 가장 먼저 눈에 들어오도록 크기를 키우고 카드 간 여백을
    넓혔다. delta에는 위/아래 화살표를 붙여 색만으로 방향을 구분하지 않게 한다
    (dataviz 스킬의 "색만으로 의미를 전달하지 않는다" 원칙과 동일한 이유). */
-.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.85rem; margin-bottom: 1.3rem; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.85rem; margin-bottom: 1.5rem; }
 .metric-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
   padding: 0.95rem 1.05rem; box-shadow: var(--shadow-card);
@@ -338,21 +343,29 @@ a { color: var(--brand-dark); }
 
 .section-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
-  padding: 1.1rem 1.2rem; box-shadow: var(--shadow-card); margin-bottom: 1.1rem;
+  padding: 1.1rem 1.2rem; box-shadow: var(--shadow-card); margin-bottom: 1.5rem;
 }
 .section-card h4 {
   font-size: 0.92rem; font-weight: 800; margin-bottom: 0.85rem; padding-bottom: 0.6rem;
   border-bottom: 1px solid var(--line); color: var(--ink);
 }
-.card-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-/* min-width:0만으로는 부족했다 — 이 카드들(표/차트를 담은 section-card)은
-   flex-basis:auto 상태에서 내용물 기준 크기가 줄바꿈된 한 줄의 폭보다 커도
-   shrink가 실제로 발동하지 않아 카드가 부모(.card-row)보다 넓게 그려지고
-   페이지 전체가 가로로 밀리는 문제가 있었다. max-width:100%로 부모 폭을
-   확실한 상한선으로 못박아 해결한다. */
-.card-row > .section-card { flex: 1 1 380px; min-width: 0; max-width: 100%; }
+.card-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+/* card-row 안의 카드는 자기 자신의 margin-bottom을 쓰지 않는다 — 그러면 카드 높이가
+   서로 달라 시각적으로 어긋나 보인다(줄이 안 맞는 카드가 생김). 아래 간격은 행
+   전체(.card-row)가 지므로 카드 자체는 0으로 리셋한다. */
+.card-row > .section-card { flex: 1 1 380px; min-width: 0; max-width: 100%; margin-bottom: 0; }
 
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-md); }
+/* ── 블록 간 상하 리듬 ──
+   차트(.chart-block)·표(.table-wrap)처럼 root에 바로 이어붙는 블록들에는 margin이
+   전혀 없어서, 바로 뒤에 다른 블록(예: card-row)이 붙으면 간격이 0px이 되는 경우가
+   있었다(예: 탭1의 월별 추이 차트 → 카드 로우). 아래에서 모든 "1단 블록"에 동일한
+   최소 간격(1.5rem)을 보장한다. */
+.chart-block { margin-bottom: 1.5rem; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-md); margin-bottom: 1.5rem; }
+/* section-card 안에서 표·차트가 마지막(유일한) 내용물일 때는 이 여백이 카드 패딩
+   안쪽에 그대로 남아 카드 바닥에 불필요한 빈 공간을 만든다 — 그 경우에만 0으로. */
+.section-card > .table-wrap:last-child,
+.section-card > .chart-block:last-child { margin-bottom: 0; }
 table.data-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
 table.data-table th, table.data-table td {
   padding: 0.34rem 0.44rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap;

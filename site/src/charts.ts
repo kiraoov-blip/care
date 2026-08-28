@@ -27,15 +27,20 @@ export interface LineSeries {
 export interface LineChartOptions {
   xLabels: (string | number)[];
   series: LineSeries[];
+  width?: number;
   height?: number;
   yFormat?: (v: number) => string;
   yLabel?: string;
   xTickEvery?: number;
 }
 
-/** 여러 계열의 라인차트 + 범례 + 호버 크로스헤어/툴팁(마크 규격: 2px 선, 4px 라운드 끝점, 8px 마커). */
+/** 여러 계열의 라인차트 + 범례 + 호버 크로스헤어/툴팁(마크 규격: 2px 선, 4px 라운드 끝점, 8px 마커).
+ * width 기본값(1000)은 카드로 감싸지 않고 .main에 바로 놓이는 "화면 폭 전체" 차트를
+ * 기준으로 잡았다(탭1·3·6의 라인차트가 모두 이 경우) — PRAS-DER의 요금/사용량 그래프
+ * (.load-line-chart svg{width:100%})처럼 차트가 카드 폭을 그대로 채우게 하기 위함이다.
+ * card-row 안에 절반 폭으로 들어가는 차트는 호출부에서 width를 좁게 지정한다. */
 export function lineChart(opts: LineChartOptions): HTMLDivElement {
-  const width = 640;
+  const width = opts.width ?? 1000;
   const height = opts.height ?? 260;
   const margin = { top: 12, right: 16, bottom: 28, left: 52 };
   const innerW = width - margin.left - margin.right;
@@ -48,7 +53,12 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
   const xAt = (i: number) => margin.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const yAt = (v: number) => margin.top + innerH - ((v - yMin) / (yMax - yMin || 1)) * innerH;
 
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `max-width:${width}px` });
+  // svg.chart{width:100%;height:auto}(styles.css)로 카드·본문 폭을 그대로 채운다 —
+  // 예전에는 여기 max-width를 별도로 박아 뒀지만, 그러면 폭이 넓은 카드에서 차트
+  // 옆에 빈 여백이 남았다. 이제 페이지 전체 폭이 PRAS-DER와 같은 1480px로 상한이
+  // 걸려 있으므로(전체 레이아웃 섹션 참고) 차트에 별도 상한을 두지 않아도 무한정
+  // 커지지 않는다.
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
 
   // 격자(recessive) + y축 눈금
   const ticks = 4;
@@ -130,6 +140,7 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
   });
 
   const container = document.createElement("div");
+  container.className = "chart-block";
   if (opts.series.length >= 2) {
     const legend = document.createElement("div");
     legend.className = "legend-row";
@@ -154,14 +165,18 @@ export interface BarDatum {
 }
 export interface BarChartOptions {
   data: BarDatum[];
+  width?: number;
   height?: number;
   valueFormat?: (v: number) => string;
   colorIndex?: number;
 }
 
-/** 단일 계열 막대차트 — 막대 위 직접 라벨(원본 px.bar(text=...) 대응), 인접 막대 사이 2px 갭. */
+/** 단일 계열 막대차트 — 막대 위 직접 라벨(원본 px.bar(text=...) 대응), 인접 막대 사이 2px 갭.
+ * width 기본값(820)은 lineChart와 같은 이유로 .main에 바로 놓이는 화면 폭 전체 차트
+ * 기준이다(탭5의 요금제 분포 막대). card-row 절반 폭에 들어가는 차트(탭1의 증감률
+ * 분포)는 호출부에서 width:560을 명시로 지정한다. */
 export function barChart(opts: BarChartOptions): HTMLDivElement {
-  const width = 560;
+  const width = opts.width ?? 820;
   const height = opts.height ?? 240;
   const margin = { top: 22, right: 16, bottom: 34, left: 46 };
   const innerW = width - margin.left - margin.right;
@@ -172,7 +187,8 @@ export function barChart(opts: BarChartOptions): HTMLDivElement {
   const barW = Math.max(6, slot - 10);
   const color = seriesColor(opts.colorIndex ?? 0);
 
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `max-width:${width}px` });
+  // svg.chart{width:100%;height:auto}로 카드 폭을 채운다(라인차트와 같은 이유 — 위 주석 참고).
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
   svg.append(svgEl("line", { x1: margin.left, x2: width - margin.right, y1: margin.top + innerH, y2: margin.top + innerH, stroke: "var(--chart-grid)", "stroke-width": 1 }));
 
   opts.data.forEach((d, i) => {
@@ -188,6 +204,7 @@ export function barChart(opts: BarChartOptions): HTMLDivElement {
     svg.append(xt);
   });
   const wrap = document.createElement("div");
+  wrap.className = "chart-block";
   wrap.append(svg);
   return wrap;
 }
@@ -240,6 +257,7 @@ export function heatmap(opts: HeatmapOptions): HTMLDivElement {
     });
   });
   const wrap = document.createElement("div");
+  wrap.className = "chart-block";
   wrap.style.overflowX = "auto";
   wrap.append(svg);
   return wrap;

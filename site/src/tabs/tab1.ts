@@ -174,6 +174,7 @@ function usageChangeDistributionChart(enriched: EnrichedCustomer[]): HTMLDivElem
   const data: BarDatum[] = bins.map((b, i) => ({ label: b.label, value: counts[i] }));
   return barChart({
     data,
+    width: 560, // card-row 절반 폭 카드에 들어가므로 전체 폭 기본값(820) 대신 좁게 지정
     valueFormat: (v) => `${total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"}%`,
   });
 }
