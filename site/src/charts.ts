@@ -214,19 +214,28 @@ export interface HeatmapOptions {
   colLabels: string[];
   matrix: number[][]; // matrix[row][col]
   valueFormat?: (v: number) => string;
+  /** 히트맵을 채워 넣을 컨테이너의 대략적인 폭(px) — 지정하면 칸(cell) 크기를 이 폭에
+   * 맞춰 키운다(46~92px 사이로 제한). 지정하지 않으면 기존처럼 46px 고정 칸으로 그린다
+   * (칸이 곧 격자 의미를 가지는 표라, 다른 차트처럼 무제한으로 늘리지는 않는다). */
+  fitWidth?: number;
 }
 
 /** 순차(sequential) 색상 히트맵 — --chart-seq-100/400/700 세 단계를 보간해 쓴다. */
 export function heatmap(opts: HeatmapOptions): HTMLDivElement {
-  const cell = 46;
   const margin = { top: 8, right: 8, bottom: 8, left: Math.max(90, ...opts.rowLabels.map((r) => r.length * 7)) };
+  // fitWidth가 있으면 칸 크기를 늘려 카드 폭을 채운다 — 카드는 넓은데 히트맵만 작게
+  // 그려져 좌우에 빈 여백이 크게 남던 문제(46px 고정 칸)를 해결한다. 너무 커지면
+  // 오히려 칸 하나의 의미가 옅어지므로 92px에서 상한을 둔다.
+  const cell = opts.fitWidth
+    ? Math.max(46, Math.min(92, (opts.fitWidth - margin.left - margin.right) / Math.max(1, opts.colLabels.length)))
+    : 46;
   const width = margin.left + margin.right + opts.colLabels.length * cell;
   const height = margin.top + margin.bottom + opts.rowLabels.length * cell + 24;
   const maxV = Math.max(1, ...opts.matrix.flat());
 
-  // 히트맵은 칸(cell) 하나하나의 크기가 의미를 가지므로(46px 격자) 다른 차트처럼
-  // width:100%로 컨테이너 폭까지 늘리지 않는다 — 원래 크기 그대로 그리고,
-  // 화면이 좁을 때만 wrap의 overflow-x:auto로 가로 스크롤을 허용한다.
+  // 히트맵은 칸(cell) 하나하나의 크기가 의미를 가지므로(격자) 다른 차트처럼
+  // width:100%로 컨테이너 폭까지 무제한으로 늘리지 않는다 — 위에서 계산한 실제
+  // 크기 그대로 그리고, 화면이 좁을 때만 wrap의 overflow-x:auto로 가로 스크롤을 허용한다.
   const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `width:${width}px;max-width:${width}px` });
   opts.colLabels.forEach((c, ci) => {
     const t = svgEl("text", {

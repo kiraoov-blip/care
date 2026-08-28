@@ -48,7 +48,7 @@ export function metricGrid(items: MetricSpec[]): HTMLDivElement {
 }
 
 // ── 표(st.dataframe) ───────────────────────────────────────────────────
-export type ColumnKind = "text" | "number" | "money" | "percent" | "count";
+export type ColumnKind = "text" | "number" | "money" | "manwon" | "percent" | "count";
 export interface ColumnSpec<T> {
   key: string;
   label: string;
@@ -57,6 +57,7 @@ export interface ColumnSpec<T> {
 }
 function inferKind(name: string): ColumnKind {
   if (name.includes("(%)") || name.includes("%p")) return "percent";
+  if (name.includes("(만원)")) return "manwon";
   if (isMoneyColumn(name)) return "money";
   if (name.includes("(명)") || name.includes("고객수") || name.includes("고객 수")) return "count";
   return "number";
@@ -69,6 +70,10 @@ function formatCell(value: unknown, kind: ColumnKind): string {
       return `${value.toFixed(1)}%`;
     case "money":
       return `₩${Math.round(value).toLocaleString("ko-KR")}`;
+    case "manwon":
+      // 원 단위 그대로 쓰면 표 폭이 넓어져 좌우 스크롤이 잘 생긴다 — 만원 단위(소수
+      // 1자리)로 줄여서 자리수를 크게 줄인다(예: 1,640,820원 → 164.1만원).
+      return `${(value / 10000).toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}만원`;
     case "count":
       return Math.round(value).toLocaleString("ko-KR");
     case "number":
@@ -273,6 +278,27 @@ export function subheading(text: string, opts: { step?: number; sub?: string } =
 }
 export function emptyNote(text: string): HTMLDivElement {
   return el("div", { className: "empty-note", text });
+}
+
+/** 클릭해야만 펼쳐지는 절 — subheading과 같은 자리에 쓰되, 본문(children)이 항상
+ * 화면에 붙박여 있지 않고 접힌 채로 시작한다(예: 탭4의 "그룹 이동 상세"처럼 표가
+ * 길어 항상 펼쳐 두면 화면을 많이 차지하는 보조 정보용). 네이티브 <details>/<summary>를
+ * 써서 키보드·스크린리더 접근성을 별도 JS 없이 확보한다. */
+export function collapsibleSection(
+  title: string,
+  children: (Node | string)[],
+  opts: { step?: number; sub?: string; open?: boolean } = {}
+): HTMLDetailsElement {
+  const details = el("details", { className: "collapsible", open: opts.open ?? false }) as HTMLDetailsElement;
+  const summary = el("summary", { className: "subheading" }, [
+    ...(opts.step !== undefined ? [el("span", { className: "subheading-step", text: String(opts.step) })] : []),
+    el("span", { text: title }),
+    el("span", { className: "collapsible-caret", text: "▾" }),
+  ]);
+  details.append(summary);
+  if (opts.sub) details.append(el("div", { className: "section-sub", text: opts.sub }));
+  details.append(...children);
+  return details;
 }
 
 // ── 핵심 결과 배너("분석 결과가 잘 드러나는" 화면을 위한 핵심 컴포넌트) ──────────

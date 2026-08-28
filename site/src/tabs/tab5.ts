@@ -143,6 +143,81 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   ]);
   root.append(cardRow([annualDistCard, monthlyDistCard]));
 
+  // ── 2. 월별 추천 요금제 ──
+  // 요청에 따라 두 분포차트 바로 다음에 "월별 추천 요금제" 절을 놓고, 그 다음에
+  // "연간 추천 요금제 조정·변경" 표를 놓는다(이전에는 연간 필터·표·CSV가 먼저
+  // 나오고 조정·변경 표, 그 다음에 월별 절이 나왔다). 연간 고객표·필터·CSV는
+  // 그 아래로 옮긴다.
+  root.append(...subheading("월별 추천 요금제", { step: 2 }));
+  const monthlyYearControl = selectField(
+    "월별 추천 분석연도",
+    [
+      { value: "2024", label: "2024" },
+      { value: "2025", label: "2025" },
+    ],
+    String(monthlyYear),
+    (v) => {
+      monthlyYear = Number(v) as 2024 | 2025;
+      renderTab5(root, ctx);
+    }
+  );
+  const monthlyMonthControl = selectField(
+    "월별 추천 분석월",
+    Array.from({ length: 12 }, (_, i) => i + 1).map((m) => ({ value: String(m), label: String(m) })),
+    String(monthlyMonth),
+    (v) => {
+      monthlyMonth = Number(v);
+      renderTab5(root, ctx);
+    }
+  );
+  root.append(controlsRow([monthlyYearControl, monthlyMonthControl]));
+
+  // monthlySelected/monthlyCounts는 연간·월별 분포차트를 나란히 배치하기 위해
+  // 위(annualTotal 계산 직후)에서 이미 계산해 두었다 — 여기서는 다시 계산하지 않는다.
+
+  root.append(
+    metricGrid([
+      { label: "일반주택용 추천", value: `${monthlyCounts["일반 주택용(저압)"].toLocaleString("ko-KR")}명` },
+      { label: "제주 TOU 추천", value: `${monthlyCounts["제주 TOU"].toLocaleString("ko-KR")}명` },
+      { label: "기본형 추천", value: `${monthlyCounts["구독 기본형"].toLocaleString("ko-KR")}명` },
+      { label: "프리미엄형 추천", value: `${monthlyCounts["구독 프리미엄형"].toLocaleString("ko-KR")}명` },
+      { label: "월별 추천 연도간 유지", value: fmtPct(tariffDynamic.monthlyStability) },
+    ] as MetricSpec[])
+  );
+
+  // (월별 추천요금제 분포 막대차트는 위쪽 두 분포차트 카드로 이미 표시했다 —
+  // 여기서는 다시 그리지 않는다.)
+
+  root.append(monthlySummaryTable(tariffDynamic.monthlySummary.filter((r) => r.연도 === monthlyYear)));
+
+  const monthlyShowColumns: ColumnSpec<Record<string, unknown>>[] = [
+    { key: "고객ID", label: "고객ID", kind: "text" },
+    { key: "사용량(kWh)", label: "사용량(kWh)", kind: "number" },
+    { key: "일반주택용(원)", label: "일반주택용(원)", kind: "money" },
+    { key: "제주TOU(원)", label: "제주TOU(원)", kind: "money" },
+    { key: "기본형(원)", label: "기본형(원)", kind: "money" },
+    { key: "프리미엄형(원)", label: "프리미엄형(원)", kind: "money" },
+    { key: "월별추천요금제", label: "월별추천요금제", kind: "text" },
+    { key: "연간추천요금제", label: "연간추천요금제", kind: "text" },
+    { key: "월·연간추천일치", label: "월·연간추천일치", kind: "text" },
+  ];
+  const monthlySelectedRows = monthlySelected as unknown as Record<string, unknown>[];
+  root.append(renderTable(monthlyShowColumns, monthlySelectedRows, { height: 420 }));
+  root.append(
+    downloadCsvButton(
+      "월별 추천요금제 고객표 CSV",
+      `v30_${monthlyYear}_${monthlyMonth}월_추천요금제.csv`,
+      monthlyShowColumns,
+      monthlySelectedRows
+    )
+  );
+
+  // ── 연간 추천 요금제 조정·변경 ──
+  root.append(...subheading("연간 추천 요금제 조정·변경"));
+  root.append(annualTransitionTable(tariffDynamic.annualTransition));
+
+  // ── 연간 추천요금제 고객표(필터·정렬) ──
+  root.append(...subheading("연간 추천요금제 고객표"));
   const annualPlanFilterControl = selectField(
     "연간 추천요금제 필터",
     [{ value: "전체", label: "전체" }, ...PLAN_ORDER.map((p) => ({ value: p, label: p }))],
@@ -186,74 +261,6 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
       `v30_${annualYear}_연간추천요금제.csv`,
       annualShowColumns,
       annualShowRows
-    )
-  );
-
-  root.append(...subheading("연간 추천 요금제 조정·변경"));
-  root.append(annualTransitionTable(tariffDynamic.annualTransition));
-
-  // ── 2. 월별 추천 요금제 ──
-  root.append(...subheading("월별 추천 요금제", { step: 2 }));
-  const monthlyYearControl = selectField(
-    "월별 추천 분석연도",
-    [
-      { value: "2024", label: "2024" },
-      { value: "2025", label: "2025" },
-    ],
-    String(monthlyYear),
-    (v) => {
-      monthlyYear = Number(v) as 2024 | 2025;
-      renderTab5(root, ctx);
-    }
-  );
-  const monthlyMonthControl = selectField(
-    "월별 추천 분석월",
-    Array.from({ length: 12 }, (_, i) => i + 1).map((m) => ({ value: String(m), label: String(m) })),
-    String(monthlyMonth),
-    (v) => {
-      monthlyMonth = Number(v);
-      renderTab5(root, ctx);
-    }
-  );
-  root.append(controlsRow([monthlyYearControl, monthlyMonthControl]));
-
-  // monthlySelected/monthlyCounts는 연간·월별 분포차트를 나란히 배치하기 위해
-  // 위(annualTotal 계산 직후)에서 이미 계산해 두었다 — 여기서는 다시 계산하지 않는다.
-
-  root.append(
-    metricGrid([
-      { label: "일반주택용 추천", value: `${monthlyCounts["일반 주택용(저압)"].toLocaleString("ko-KR")}명` },
-      { label: "제주 TOU 추천", value: `${monthlyCounts["제주 TOU"].toLocaleString("ko-KR")}명` },
-      { label: "기본형 추천", value: `${monthlyCounts["구독 기본형"].toLocaleString("ko-KR")}명` },
-      { label: "프리미엄형 추천", value: `${monthlyCounts["구독 프리미엄형"].toLocaleString("ko-KR")}명` },
-      { label: "월별 추천 연도간 유지", value: fmtPct(tariffDynamic.monthlyStability) },
-    ] as MetricSpec[])
-  );
-
-  // (월별 추천요금제 분포 막대차트는 위쪽 "연간 추천 요금제" 절에서 연간 차트와
-  // 함께 2열로 이미 표시했다 — 여기서는 다시 그리지 않는다.)
-
-  root.append(monthlySummaryTable(tariffDynamic.monthlySummary.filter((r) => r.연도 === monthlyYear)));
-
-  const monthlyShowColumns: ColumnSpec<Record<string, unknown>>[] = [
-    { key: "고객ID", label: "고객ID", kind: "text" },
-    { key: "사용량(kWh)", label: "사용량(kWh)", kind: "number" },
-    { key: "일반주택용(원)", label: "일반주택용(원)", kind: "money" },
-    { key: "제주TOU(원)", label: "제주TOU(원)", kind: "money" },
-    { key: "기본형(원)", label: "기본형(원)", kind: "money" },
-    { key: "프리미엄형(원)", label: "프리미엄형(원)", kind: "money" },
-    { key: "월별추천요금제", label: "월별추천요금제", kind: "text" },
-    { key: "연간추천요금제", label: "연간추천요금제", kind: "text" },
-    { key: "월·연간추천일치", label: "월·연간추천일치", kind: "text" },
-  ];
-  const monthlySelectedRows = monthlySelected as unknown as Record<string, unknown>[];
-  root.append(renderTable(monthlyShowColumns, monthlySelectedRows, { height: 420 }));
-  root.append(
-    downloadCsvButton(
-      "월별 추천요금제 고객표 CSV",
-      `v30_${monthlyYear}_${monthlyMonth}월_추천요금제.csv`,
-      monthlyShowColumns,
-      monthlySelectedRows
     )
   );
 

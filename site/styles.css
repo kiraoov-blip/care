@@ -12,10 +12,14 @@
   --gold: #e3ba46;
   --gold-soft: #fbf2d8;
 
-  --mint: #2ea88e;
-  --mint-dark: #1f8571;
-  --mint-soft: #e2f5f0;
-  --mint-line: #bfe8dd;
+  /* 결과 배너·체크박스 등에 쓰던 민트(초록) 계열을 따뜻한 노란색(amber) 계열로
+   * 교체(요청 반영) — border/accent(--amber), 텍스트로 쓸 만큼 진한 톤(--amber-dark),
+   * 옅은 배경(--amber-soft), 옅은 테두리(--amber-line) 네 역할은 기존 mint와 동일하게
+   * 유지한다. dataviz 스킬의 validate_palette.js로 각 값을 검증했다. */
+  --amber: #c99400;
+  --amber-dark: #7a5a10;
+  --amber-soft: #faf0d0;
+  --amber-line: #ecd68a;
 
   --ink: #2f2618;
   --ink-soft: #83705c;
@@ -30,11 +34,13 @@
   --red-soft: #fbe9e4;
   --warn-bg: #f7ddc0;
 
-  /* 차트 전용(dataviz 스킬 기본 팔레트에서 검증된 값 — categorical 2/4계열, sequential 1계열) */
+  /* 차트 전용(dataviz 스킬 기본 팔레트에서 검증된 값 — categorical 2/4계열, sequential 1계열).
+   * 2계열(2025·비교)을 초록에서 노란색으로 바꾸면서, 기존 4계열(amber 톤)과 색이
+   * 겹치게 되어 4계열은 자두색 계열로 다시 배정했다(validate_palette.js로 재검증). */
   --chart-series-1: #eb6834; /* 2024·기준 계열 */
-  --chart-series-2: #1baf7a; /* 2025·비교 계열 */
+  --chart-series-2: #d6a800; /* 2025·비교 계열(민트→노란색) */
   --chart-series-3: #2a78d6; /* 3~4계열째부터 추가 */
-  --chart-series-4: #eda100;
+  --chart-series-4: #b0457a;
   --chart-seq-100: #cde2fb;
   --chart-seq-400: #3987e5;
   --chart-seq-700: #0d366b;
@@ -56,10 +62,10 @@
     --gold: #e8c463;
     --gold-soft: #3a3013;
 
-    --mint: #3fc0a4;
-    --mint-dark: #6fd8c1;
-    --mint-soft: #123a32;
-    --mint-line: #1f5548;
+    --amber: #d0a828;
+    --amber-dark: #f0d060;
+    --amber-soft: #3a2f0c;
+    --amber-line: #5c4a16;
 
     --ink: #f3ece0;
     --ink-soft: #baa88f;
@@ -75,9 +81,9 @@
     --warn-bg: #4a3413;
 
     --chart-series-1: #f08a52;
-    --chart-series-2: #3fc79f;
+    --chart-series-2: #e8cc66;
     --chart-series-3: #6ea6ec;
-    --chart-series-4: #f0b94a;
+    --chart-series-4: #c96a9c;
     --chart-seq-100: #16283f;
     --chart-seq-400: #3987e5;
     --chart-seq-700: #b7d3f6;
@@ -93,10 +99,10 @@
   --brand-line: #5c3f1e;
   --gold: #e8c463;
   --gold-soft: #3a3013;
-  --mint: #3fc0a4;
-  --mint-dark: #6fd8c1;
-  --mint-soft: #123a32;
-  --mint-line: #1f5548;
+  --amber: #d0a828;
+  --amber-dark: #f0d060;
+  --amber-soft: #3a2f0c;
+  --amber-line: #5c4a16;
   --ink: #f3ece0;
   --ink-soft: #baa88f;
   --line: #4a3c28;
@@ -109,9 +115,9 @@
   --red-soft: #3a1e17;
   --warn-bg: #4a3413;
   --chart-series-1: #f08a52;
-  --chart-series-2: #3fc79f;
+  --chart-series-2: #e8cc66;
   --chart-series-3: #6ea6ec;
-  --chart-series-4: #f0b94a;
+  --chart-series-4: #c96a9c;
   --chart-seq-100: #16283f;
   --chart-seq-400: #3987e5;
   --chart-seq-700: #b7d3f6;
@@ -272,8 +278,33 @@ a { color: var(--brand-dark); }
 }
 .subheading + .section-sub { margin-top: 0.3rem; }
 
+/* ── 접이식 절(collapsibleSection) ──
+   subheading과 같은 자리에 쓰이지만, 클릭하기 전에는 본문이 화면에 나오지 않는다
+   (예: 탭4 "그룹 이동 상세"처럼 길지만 항상 볼 필요는 없는 보조 표). summary가
+   subheading 스타일을 그대로 이어받고, 오른쪽 화살표(▾)로 펼침/접힘 상태를 보여준다. */
+.collapsible { margin: 2rem 0 0; }
+.collapsible:first-child { margin-top: 0; }
+.collapsible > summary {
+  margin: 0 0 0.15rem; cursor: pointer; list-style: none; user-select: none;
+}
+.collapsible > summary::-webkit-details-marker { display: none; }
+.collapsible > summary:hover .collapsible-caret { color: var(--ink); }
+.collapsible-caret {
+  margin-left: 0.15rem; color: var(--ink-soft); font-size: 0.85em; transition: transform 0.15s ease;
+  transform: rotate(-90deg);
+}
+.collapsible[open] > summary .collapsible-caret { transform: rotate(0deg); }
+.collapsible[open] > summary { margin-bottom: 0.15rem; }
+.collapsible > summary + .section-sub { margin-top: 0.3rem; margin-bottom: 1.1rem; }
+.collapsible > .table-wrap:first-of-type,
+.collapsible > .chart-block:first-of-type { margin-top: 0.9rem; }
+
 .controls-row { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-end; margin-bottom: 1rem; }
-.control { display: flex; flex-direction: column; gap: 0.28rem; min-width: 140px; }
+/* .control 하나만 단독으로(controls-row 없이) 화면에 바로 놓이는 경우도 있다
+   (예: 탭3의 "진단 기간" 라디오) — 그 경우도 바로 아래 블록과 붙어 보이지 않도록
+   기본 여백을 준다. controls-row 안에서는 로우 전체가 간격을 지므로 0으로 리셋. */
+.control { display: flex; flex-direction: column; gap: 0.28rem; min-width: 140px; margin-bottom: 1.5rem; }
+.controls-row > .control { margin-bottom: 0; }
 .control label { font-size: 0.76rem; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
 .control select, .control input[type="number"], .control input[type="text"] {
   padding: 0.4rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius-md);
@@ -292,25 +323,26 @@ a { color: var(--brand-dark); }
   display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; padding: 0.3rem 0.55rem;
   border: 1px solid var(--line); border-radius: 999px; cursor: pointer; background: var(--surface);
 }
-.checkbox-grid input { accent-color: var(--mint); }
-.checkbox-grid label.checked { border-color: var(--mint); background: var(--mint-soft); }
+.checkbox-grid input { accent-color: var(--amber); }
+.checkbox-grid label.checked { border-color: var(--amber); background: var(--amber-soft); }
 
 /* ── 핵심 결과 배너 ──
    각 탭에서 지표 카드보다도 먼저 나오는, 그 화면의 결론 한 문장. 처음에는 결과의
    성격(개선/주의/경고)에 따라 색을 4가지(brand/mint/gold/red)로 다르게 썼는데,
-   화면마다 배너 색이 들쭉날쭉해 보인다는 피드백을 받아 모든 배너를 하나의 색(민트
-   계열)으로 통일한다 — tone 값은 계속 받되(추후 다시 구분할 수 있도록 컴포넌트
-   인터페이스는 남겨둔다) 실제 렌더링 색은 전부 동일하게 맞춘다. */
+   화면마다 배너 색이 들쭉날쭉해 보인다는 피드백을 받아 모든 배너를 하나의 색으로
+   통일했다 — 이후 그 하나의 색을 초록(민트) 계열에서 따뜻한 노란색(amber) 계열로
+   다시 바꿨다(초록이 어색하다는 피드백). tone 값은 계속 받되(추후 다시 구분할 수
+   있도록 컴포넌트 인터페이스는 남겨둔다) 실제 렌더링 색은 전부 동일하게 맞춘다. */
 .insight-banner {
   display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem;
-  border-radius: var(--radius-lg); border: 1px solid var(--mint-line); border-left: 4px solid var(--mint);
-  background: var(--mint-soft); box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg); border: 1px solid var(--amber-line); border-left: 4px solid var(--amber);
+  background: var(--amber-soft); box-shadow: var(--shadow-card);
   padding: 1.1rem 1.3rem; margin-bottom: 1.5rem;
 }
 .insight-banner.tone-brand,
 .insight-banner.tone-mint,
 .insight-banner.tone-gold,
-.insight-banner.tone-red { border-left-color: var(--mint); background: var(--mint-soft); }
+.insight-banner.tone-red { border-left-color: var(--amber); background: var(--amber-soft); }
 .insight-body { flex: 1 1 320px; min-width: 0; }
 .insight-headline {
   font-size: 1.18rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.42; color: var(--ink);
@@ -337,7 +369,7 @@ a { color: var(--brand-dark); }
 .metric-card .value { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
 .metric-card .delta { font-size: 0.78rem; margin-top: 0.3rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.2rem; }
 .metric-card .delta.up { color: var(--brand-dark); }
-.metric-card .delta.down { color: var(--mint-dark); }
+.metric-card .delta.down { color: var(--amber-dark); }
 .metric-card .delta.up::before { content: "▲"; font-size: 0.65em; }
 .metric-card .delta.down::before { content: "▼"; font-size: 0.65em; }
 
@@ -389,7 +421,7 @@ table.data-table tbody tr:hover { background: var(--brand-soft); }
 .pill.alert-주의 { background: var(--brand-soft); color: var(--brand-dark); }
 .pill.alert-경고 { background: var(--warn-bg); color: #8a4408; }
 .pill.alert-긴급 { background: var(--red-soft); color: var(--red); }
-.pill.mint { background: var(--mint-soft); color: var(--mint-dark); }
+.pill.mint { background: var(--amber-soft); color: var(--amber-dark); }
 
 .alert-box { border-radius: var(--radius-md); padding: 0.7rem 0.9rem; font-size: 0.86rem; margin: 0.7rem 0; }
 .alert-box.success { background: var(--green-soft); color: #2f5a41; border: 1px solid #bfe0cc; }

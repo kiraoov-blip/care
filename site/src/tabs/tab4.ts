@@ -15,6 +15,7 @@ import {
   sectionTitle,
   subheading,
   insightBanner,
+  collapsibleSection,
 } from "../ui.js";
 import { heatmap } from "../charts.js";
 import type { ClusterSummaryRow, ClusterTransitionRow } from "../data.js";
@@ -67,8 +68,9 @@ export function renderTab4(root: HTMLElement, ctx: AppContext): void {
   root.append(...subheading("2024→2025년 그룹 이동 현황", { sub: "가로축은 2025년 그룹, 세로축은 2024년 그룹입니다. 진한 칸일수록 해당 이동에 속한 고객이 많습니다." }));
   root.append(transitionHeatmap(clusters.transition));
 
-  root.append(...subheading("그룹 이동 상세"));
-  root.append(transitionDetailTable(clusters.transition));
+  // "그룹 이동 상세"는 위 히트맵보다 훨씬 긴 표라 항상 펼쳐 두면 화면을 많이
+  // 차지한다 — 클릭해서 펼쳐 볼 수 있는 접이식 절로 바꾼다.
+  root.append(collapsibleSection("그룹 이동 상세", [transitionDetailTable(clusters.transition)]));
 }
 
 /** cs(원본 cluster_summary 가공) — 그룹별 연도별 요약표. */
@@ -133,7 +135,7 @@ function transitionHeatmap(transition: ClusterTransitionRow[]): HTMLDivElement {
       return found ? found.고객수 : 0;
     })
   );
-  return heatmap({ rowLabels, colLabels, matrix, valueFormat: (v) => v.toLocaleString("ko-KR") });
+  return heatmap({ rowLabels, colLabels, matrix, fitWidth: 1000, valueFormat: (v) => v.toLocaleString("ko-KR") });
 }
 
 /** tt(원본 cluster_transition 가공) — 이동 상세표. */

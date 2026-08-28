@@ -67,7 +67,28 @@ function roundRowForCsv(row: MonitorRow, columns: { key: string; label: string }
   return out as unknown as MonitorRow;
 }
 
-const ANNUAL_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
+// 금액 열은 화면 표에서는 만원 단위(소수 1자리)로 줄여서 보여준다 — 원 단위 그대로면
+// 자리수가 많아 표가 넓어지고 좌우 스크롤이 잘 생긴다. 다만 CSV 다운로드까지 만원
+// 단위로 바꾸면 원본 데이터와 단위가 달라져 헷갈릴 수 있으므로, CSV는 기존과 동일하게
+// 원 단위 그대로 내려받도록 화면표시용(DISPLAY)과 CSV용(CSV) 열 정의를 분리한다.
+const ANNUAL_DISPLAY_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
+  { key: "고객ID", label: "고객ID", kind: "text" },
+  { key: "그룹", label: "그룹", kind: "text" },
+  { key: "연간사용량(kWh)", label: "연간사용량(kWh)", kind: "number" },
+  { key: "월평균사용량(kWh)", label: "월평균사용량(kWh)", kind: "number" },
+  { key: "일반주택용(원)", label: "일반주택용(만원)", kind: "manwon", get: (r) => r["일반주택용(원)"] },
+  { key: "제주TOU(원)", label: "제주TOU(만원)", kind: "manwon", get: (r) => r["제주TOU(원)"] },
+  { key: "기본형(원)", label: "기본형(만원)", kind: "manwon", get: (r) => r["기본형(원)"] },
+  { key: "프리미엄형(원)", label: "프리미엄형(만원)", kind: "manwon", get: (r) => r["프리미엄형(원)"] },
+  { key: "추천요금제", label: "추천요금제", kind: "text" },
+  { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
+  { key: "기본형제공량사용률(%)", label: "기본형제공량사용률(%)", kind: "percent" },
+  { key: "프리미엄형제공량사용률(%)", label: "프리미엄형제공량사용률(%)", kind: "percent" },
+  { key: "2024→2025증감률(%)", label: "2024→2025증감률(%)", kind: "percent" },
+  { key: "패턴안정성점수", label: "패턴안정성점수", kind: "number" },
+  { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
+];
+const ANNUAL_CSV_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
   { key: "고객ID", label: "고객ID", kind: "text" },
   { key: "그룹", label: "그룹", kind: "text" },
   { key: "연간사용량(kWh)", label: "연간사용량(kWh)", kind: "number" },
@@ -85,7 +106,29 @@ const ANNUAL_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
   { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
 ];
 
-const MONTHLY_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
+const MONTHLY_DISPLAY_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
+  { key: "고객ID", label: "고객ID", kind: "text" },
+  { key: "그룹", label: "그룹", kind: "text" },
+  { key: "현재누적(kWh)", label: "현재누적(kWh)", kind: "number" },
+  { key: "남은정액량(kWh)", label: "남은정액량(kWh)", kind: "number" },
+  { key: "월말예상(kWh)", label: "월말예상(kWh)", kind: "number" },
+  { key: "예측하한(kWh)", label: "예측하한(kWh)", kind: "number" },
+  { key: "예측상한(kWh)", label: "예측상한(kWh)", kind: "number" },
+  { key: "실제월사용량(kWh)", label: "실제월사용량(kWh)", kind: "number" },
+  { key: "일반주택용(원)", label: "일반주택용(만원)", kind: "manwon", get: (r) => r["일반주택용(원)"] },
+  { key: "제주TOU(원)", label: "제주TOU(만원)", kind: "manwon", get: (r) => r["제주TOU(원)"] },
+  { key: "기본형(원)", label: "기본형(만원)", kind: "manwon", get: (r) => r["기본형(원)"] },
+  { key: "프리미엄형(원)", label: "프리미엄형(만원)", kind: "manwon", get: (r) => r["프리미엄형(원)"] },
+  { key: "추천요금제", label: "추천요금제", kind: "text" },
+  { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
+  { key: "기본형제공량사용률(%)", label: "기본형제공량사용률(%)", kind: "percent" },
+  { key: "프리미엄형제공량사용률(%)", label: "프리미엄형제공량사용률(%)", kind: "percent" },
+  { key: "알림단계", label: "알림단계", kind: "text" },
+  { key: "예측오차(%)", label: "예측오차(%)", kind: "percent" },
+  { key: "패턴안정성점수", label: "패턴안정성점수", kind: "number" },
+  { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
+];
+const MONTHLY_CSV_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
   { key: "고객ID", label: "고객ID", kind: "text" },
   { key: "그룹", label: "그룹", kind: "text" },
   { key: "현재누적(kWh)", label: "현재누적(kWh)", kind: "number" },
@@ -113,9 +156,28 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
     root.innerHTML = "";
     root.append(...sectionTitle("요금 모니터링 및 요금제 추천"));
 
-    // ── a,b,c,d = st.columns(4) ──
+    // 필터 6~8개(분석기간·분석연도·[분석월·조회일]·정액알림기준요금제·정렬기준·
+    // 추천요금제필터·그룹필터)를 한 행에 모아 보여준다 — 예전에는 3개 controlsRow로
+    // 나뉘어 있었다. 여기서는 먼저 모든 값을 계산해 두고, 맨 아래에서 controlsRow
+    // 하나로 합쳐 렌더링한다(모바일 폭에서는 controlsRow의 flex-wrap으로 자동
+    // 줄바꿈된다). 추천요금제/그룹 필터는 monitor 계산 결과(현재 상태 기준)에서
+    // 옵션 목록을 뽑아야 하므로, 아래에서 컨트롤을 만들기 전에 monitor부터 구한다.
     const maxday = daysInMonth(year, month);
     cutoff = Math.min(Math.max(cutoff, 5), Math.max(maxday - 1, 5));
+
+    const monitor: MonitorRow[] =
+      period === "연간 전체"
+        ? buildAnnualMonitor(ctx.raw.monthly, ctx.state.enrichedByCid, year, ctx.state.fee)
+        : buildMonthlyMonitor(
+            ctx.state.customerDaily,
+            ctx.raw.monthly,
+            ctx.state.enrichedByCid,
+            year,
+            month,
+            cutoff,
+            currentPlan,
+            ctx.state.fee
+          );
 
     const periodControl = selectField(
       "분석 기간",
@@ -139,7 +201,7 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
       }
     );
 
-    const topControls: HTMLElement[] = [periodControl, yearControl];
+    const allControls: HTMLElement[] = [periodControl, yearControl];
     if (period !== "연간 전체") {
       const monthControl = selectField(
         "분석 월",
@@ -159,14 +221,9 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
         },
         { min: 5, max: Math.max(maxday - 1, 5), step: 1 }
       );
-      topControls.push(monthControl, cutoffControl);
-    }
-    root.append(controlsRow(topControls));
-    if (period !== "연간 전체") {
-      root.append(el("div", { className: "section-sub", text: `선택한 조회일: ${cutoff}일` }));
+      allControls.push(monthControl, cutoffControl);
     }
 
-    // ── e,f = st.columns(2) ──
     const currentPlanControl = selectField(
       "정액 알림 기준 요금제",
       [
@@ -188,29 +245,18 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
         paint();
       }
     );
-    root.append(controlsRow([currentPlanControl, sortKeyControl]));
-
-    // ── build_tariff_monitor ──
-    const monitor: MonitorRow[] =
-      period === "연간 전체"
-        ? buildAnnualMonitor(ctx.raw.monthly, ctx.state.enrichedByCid, year, ctx.state.fee)
-        : buildMonthlyMonitor(
-            ctx.state.customerDaily,
-            ctx.raw.monthly,
-            ctx.state.enrichedByCid,
-            year,
-            month,
-            cutoff,
-            currentPlan,
-            ctx.state.fee
-          );
+    allControls.push(currentPlanControl, sortKeyControl);
 
     if (monitor.length === 0) {
+      root.append(controlsRow(allControls));
+      if (period !== "연간 전체") {
+        root.append(el("div", { className: "section-sub", text: `선택한 조회일: ${cutoff}일` }));
+      }
       root.append(emptyNote("표시할 고객이 없습니다."));
       return;
     }
 
-    // ── f1,f2 = st.columns(2) : 추천요금제/그룹 필터 ──
+    // ── 추천요금제/그룹 필터 ──
     const planOptions = ["전체", ...[...new Set(monitor.map((r) => r.추천요금제 as string))].sort()];
     const clusterOptions = ["전체", ...[...new Set(monitor.map((r) => r.그룹))].sort()];
     if (!planOptions.includes(planFilter)) planFilter = "전체";
@@ -234,7 +280,12 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
         paint();
       }
     );
-    root.append(controlsRow([planFilterControl, clusterFilterControl]));
+    allControls.push(planFilterControl, clusterFilterControl);
+
+    root.append(controlsRow(allControls));
+    if (period !== "연간 전체") {
+      root.append(el("div", { className: "section-sub", text: `선택한 조회일: ${cutoff}일` }));
+    }
 
     let show: MonitorRow[] = monitor;
     if (planFilter !== "전체") show = show.filter((r) => r.추천요금제 === (planFilter as PlanName));
@@ -279,19 +330,22 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
       ])
     );
 
-    // ── st.dataframe(show, ...) ──
-    const columns = (period === "연간 전체" ? ANNUAL_COLUMNS : MONTHLY_COLUMNS) as unknown as ColumnSpec<
+    // ── st.dataframe(show, ...) : 화면 표는 만원 단위로 줄인 열을 쓴다 ──
+    const displayColumns = (period === "연간 전체" ? ANNUAL_DISPLAY_COLUMNS : MONTHLY_DISPLAY_COLUMNS) as unknown as ColumnSpec<
       Record<string, unknown>
     >[];
-    root.append(renderTable(columns, show as unknown as Record<string, unknown>[], { height: 520 }));
+    root.append(renderTable(displayColumns, show as unknown as Record<string, unknown>[], { height: 520 }));
 
-    // ── st.download_button(...) ──
-    const csvRows = show.map((r) => roundRowForCsv(r, columns) as unknown as Record<string, unknown>);
+    // ── st.download_button(...) : CSV는 기존과 동일하게 원 단위 그대로 내려받는다 ──
+    const csvColumns = (period === "연간 전체" ? ANNUAL_CSV_COLUMNS : MONTHLY_CSV_COLUMNS) as unknown as ColumnSpec<
+      Record<string, unknown>
+    >[];
+    const csvRows = show.map((r) => roundRowForCsv(r, csvColumns) as unknown as Record<string, unknown>);
     root.append(
       downloadCsvButton(
         "고객별 요금 모니터링 CSV",
         `v30_${year}_${period}_요금모니터링.csv`,
-        columns,
+        csvColumns,
         csvRows
       )
     );
