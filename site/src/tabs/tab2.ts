@@ -11,6 +11,7 @@ import {
   controlsRow,
   selectField,
   numberField,
+  radioField,
   downloadCsvButton,
   sectionTitle,
   emptyNote,
@@ -40,6 +41,11 @@ let currentPlan: "기본형" | "프리미엄형" = "기본형";
 let sortKey: "수요관리우선점수" | "TOU대비절감(원)" | "월말예상(kWh)" | "연간사용량(kWh)" = "수요관리우선점수";
 let planFilter = "전체";
 let clusterFilter = "전체";
+// 열이 15개나 되어(만원 단위로 줄여도) 화면 폭 안에 다 들어가지 못해 표 아래에
+// 항상 좌우 스크롤이 생겼다 — 스크롤을 아예 없애 달라는 요청으로, 기본은 화면
+// 폭에 맞는 "핵심 열만" 보여주고 원하면 "전체 열"로 바꿔 볼 수 있게 한다.
+// CSV 다운로드는 이 설정과 무관하게 항상 전체 열을 그대로 내려받는다.
+let columnMode: "핵심 열만" | "전체 열" = "핵심 열만";
 
 function daysInMonth(y: number, m: number): number {
   return new Date(y, m, 0).getDate();
@@ -126,6 +132,29 @@ const MONTHLY_DISPLAY_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
   { key: "알림단계", label: "알림단계", kind: "text" },
   { key: "예측오차(%)", label: "예측오차(%)", kind: "percent" },
   { key: "패턴안정성점수", label: "패턴안정성점수", kind: "number" },
+  { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
+];
+
+// ── "핵심 열만" 보기용 부분집합 — 화면 표시(DISPLAY) 열 중에서 판단에 가장 중요한
+// 6~7개만 남긴다(고객 식별·현재 상태·추천 결과·절감액·우선순위 점수 중심). 나머지
+// 상세 열(예측 상/하한, 제공량 사용률 등)은 "전체 열"로 바꾸면 그대로 볼 수 있고,
+// CSV에는 이 화면표시 설정과 무관하게 항상 전체 열이 담긴다. ──
+const ANNUAL_COMPACT_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
+  { key: "고객ID", label: "고객ID", kind: "text" },
+  { key: "그룹", label: "그룹", kind: "text" },
+  { key: "연간사용량(kWh)", label: "연간사용량(kWh)", kind: "number" },
+  { key: "추천요금제", label: "추천요금제", kind: "text" },
+  { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
+  { key: "2024→2025증감률(%)", label: "2024→2025증감률(%)", kind: "percent" },
+  { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
+];
+const MONTHLY_COMPACT_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
+  { key: "고객ID", label: "고객ID", kind: "text" },
+  { key: "그룹", label: "그룹", kind: "text" },
+  { key: "월말예상(kWh)", label: "월말예상(kWh)", kind: "number" },
+  { key: "추천요금제", label: "추천요금제", kind: "text" },
+  { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
+  { key: "알림단계", label: "알림단계", kind: "text" },
   { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
 ];
 const MONTHLY_CSV_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
@@ -331,7 +360,25 @@ export function renderTab2(root: HTMLElement, ctx: AppContext): void {
     );
 
     // ── st.dataframe(show, ...) : 화면 표는 만원 단위로 줄인 열을 쓴다 ──
-    const displayColumns = (period === "연간 전체" ? ANNUAL_DISPLAY_COLUMNS : MONTHLY_DISPLAY_COLUMNS) as unknown as ColumnSpec<
+    // 열이 15개라 어떤 화면 폭에서도 좌우 스크롤이 생기던 문제 — "핵심 열만" 보기를
+    // 기본으로 둬서 스크롤 없이 한눈에 보이게 하고, 필요하면 "전체 열"로 바꿔
+    // 볼 수 있게 한다(그 경우엔 기존처럼 표 아래 가로 스크롤이 다시 생긴다).
+    const columnModeControl = radioField(
+      "표 보기",
+      [
+        { value: "핵심 열만", label: "핵심 열만" },
+        { value: "전체 열", label: "전체 열" },
+      ],
+      columnMode,
+      (v) => {
+        columnMode = v as "핵심 열만" | "전체 열";
+        paint();
+      }
+    );
+    root.append(columnModeControl);
+    const fullColumns = period === "연간 전체" ? ANNUAL_DISPLAY_COLUMNS : MONTHLY_DISPLAY_COLUMNS;
+    const compactColumns = period === "연간 전체" ? ANNUAL_COMPACT_COLUMNS : MONTHLY_COMPACT_COLUMNS;
+    const displayColumns = (columnMode === "핵심 열만" ? compactColumns : fullColumns) as unknown as ColumnSpec<
       Record<string, unknown>
     >[];
     root.append(renderTable(displayColumns, show as unknown as Record<string, unknown>[], { height: 520 }));

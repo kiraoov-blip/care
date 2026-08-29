@@ -42,7 +42,10 @@ export interface LineChartOptions {
 export function lineChart(opts: LineChartOptions): HTMLDivElement {
   const width = opts.width ?? 1000;
   const height = opts.height ?? 260;
-  const margin = { top: 12, right: 16, bottom: 28, left: 52 };
+  // y축 숫자 폰트를 10→13px로 키운 만큼(아래) 왼쪽 여백도 함께 넓혀야 한다 — 여백은
+  // 그대로 둔 채 글자만 커지면 "994.9kWh"처럼 긴 라벨의 앞자리가 SVG 왼쪽 경계
+  // 밖으로 밀려나 잘려 보인다(예: "994.9kWh" → "4.9kWh"로 잘림, 실제 겪은 버그).
+  const margin = { top: 12, right: 16, bottom: 28, left: 78 };
   const innerW = width - margin.left - margin.right;
   const innerH = height - margin.top - margin.bottom;
 
@@ -58,28 +61,37 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
   // 옆에 빈 여백이 남았다. 이제 페이지 전체 폭이 PRAS-DER와 같은 1480px로 상한이
   // 걸려 있으므로(전체 레이아웃 섹션 참고) 차트에 별도 상한을 두지 않아도 무한정
   // 커지지 않는다.
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  //
+  // min-width(뷰박스 폭과 동일한 값)를 함께 줘서, 화면이 좁아도(특히 모바일) 글자가
+  // 실제 렌더 크기 기준 뷰박스 단위값 그대로(축소 없이) 나오도록 한다 — "뷰박스를
+  // 컨테이너 폭에 맞춰 100%로 늘였다 줄였다" 하는 svg.chart{width:100%}의 특성상,
+  // 컨테이너가 뷰박스보다 좁아지면 안의 글자도 똑같은 비율로 작아져 숫자가 잘 안
+  // 보인다는 요청이 있었다. 대신 이 min-width보다 화면이 좁을 때는(휴대폰 등)
+  // .chart-block의 overflow-x:auto(styles.css)로 가로 스크롤을 허용해, 글자 크기를
+  // 유지하는 쪽을 화면을 줄여 다 보여주는 쪽보다 우선한다.
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `min-width:${width}px` });
 
-  // 격자(recessive) + y축 눈금
+  // 격자(recessive) + y축 눈금 — 축 숫자를 더 크고 뚜렷하게(요청 반영: 10 → 13).
   const ticks = 4;
   for (let t = 0; t <= ticks; t++) {
     const v = yMin + ((yMax - yMin) * t) / ticks;
     const y = yAt(v);
     svg.append(svgEl("line", { x1: margin.left, x2: width - margin.right, y1: y, y2: y, stroke: "var(--chart-grid)", "stroke-width": 1 }));
-    const label = svgEl("text", { x: margin.left - 8, y: y + 3, "text-anchor": "end", "font-size": 10, fill: "var(--chart-text)" });
+    const label = svgEl("text", { x: margin.left - 8, y: y + 4, "text-anchor": "end", "font-size": 13, fill: "var(--chart-text)" });
     label.textContent = opts.yFormat ? opts.yFormat(v) : v.toLocaleString("ko-KR");
     svg.append(label);
   }
-  // x축 라벨
+  // x축 라벨 — 마찬가지로 10 → 12로 키운다.
   const everyN = opts.xTickEvery ?? Math.max(1, Math.ceil(n / 12));
   opts.xLabels.forEach((lab, i) => {
     if (i % everyN !== 0 && i !== n - 1) return;
-    const t = svgEl("text", { x: xAt(i), y: height - 8, "text-anchor": "middle", "font-size": 10, fill: "var(--chart-text)" });
+    const t = svgEl("text", { x: xAt(i), y: height - 8, "text-anchor": "middle", "font-size": 12, fill: "var(--chart-text)" });
     t.textContent = String(lab);
     svg.append(t);
   });
 
-  // 계열 선 + 마커
+  // 계열 선 + 마커 — 마커(원)를 더 크게(반지름 3→5) 하고, 안쪽은 흰색으로 채워
+  // 테두리(계열 색)만 색이 있는 "도넛" 형태로 바꿔 각 점의 위치가 더 뚜렷이 보이게 한다.
   opts.series.forEach((s, si) => {
     const color = seriesColor(s.colorIndex ?? si);
     let d = "";
@@ -94,7 +106,7 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
     svg.append(path);
     s.values.forEach((v, i) => {
       if (v === null || !Number.isFinite(v)) return;
-      svg.append(svgEl("circle", { cx: xAt(i), cy: yAt(v), r: 3, fill: color }));
+      svg.append(svgEl("circle", { cx: xAt(i), cy: yAt(v), r: 5, fill: "#fff", stroke: color, "stroke-width": 2 }));
     });
   });
 
@@ -222,7 +234,9 @@ export interface HeatmapOptions {
 
 /** 순차(sequential) 색상 히트맵 — --chart-seq-100/400/700 세 단계를 보간해 쓴다. */
 export function heatmap(opts: HeatmapOptions): HTMLDivElement {
-  const margin = { top: 8, right: 8, bottom: 8, left: Math.max(90, ...opts.rowLabels.map((r) => r.length * 7)) };
+  // 행 라벨 글자 크기를 10→13px로 키운 만큼(아래), 왼쪽 여백도 글자 폭 추정치를
+  // 늘려 잡아야 긴 그룹 이름이 칸과 겹치지 않는다(char당 7px → 9px).
+  const margin = { top: 10, right: 8, bottom: 8, left: Math.max(96, ...opts.rowLabels.map((r) => r.length * 9)) };
   // fitWidth가 있으면 칸 크기를 늘려 카드 폭을 채운다 — 카드는 넓은데 히트맵만 작게
   // 그려져 좌우에 빈 여백이 크게 남던 문제(46px 고정 칸)를 해결한다. 너무 커지면
   // 오히려 칸 하나의 의미가 옅어지므로 92px에서 상한을 둔다.
@@ -230,23 +244,25 @@ export function heatmap(opts: HeatmapOptions): HTMLDivElement {
     ? Math.max(46, Math.min(92, (opts.fitWidth - margin.left - margin.right) / Math.max(1, opts.colLabels.length)))
     : 46;
   const width = margin.left + margin.right + opts.colLabels.length * cell;
-  const height = margin.top + margin.bottom + opts.rowLabels.length * cell + 24;
+  const height = margin.top + margin.bottom + opts.rowLabels.length * cell + 26;
   const maxV = Math.max(1, ...opts.matrix.flat());
 
   // 히트맵은 칸(cell) 하나하나의 크기가 의미를 가지므로(격자) 다른 차트처럼
   // width:100%로 컨테이너 폭까지 무제한으로 늘리지 않는다 — 위에서 계산한 실제
   // 크기 그대로 그리고, 화면이 좁을 때만 wrap의 overflow-x:auto로 가로 스크롤을 허용한다.
   const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `width:${width}px;max-width:${width}px` });
+  // 축 라벨(그룹 이름)·칸 안 숫자 모두 가독성이 떨어진다는 요청으로 10px→13px,
+  // 11px→15px(굵게)로 키웠다.
   opts.colLabels.forEach((c, ci) => {
     const t = svgEl("text", {
-      x: margin.left + ci * cell + cell / 2, y: margin.top + 12, "text-anchor": "middle", "font-size": 10, fill: "var(--chart-text)",
+      x: margin.left + ci * cell + cell / 2, y: margin.top + 14, "text-anchor": "middle", "font-size": 13, "font-weight": 600, fill: "var(--chart-text)",
     });
     t.textContent = c;
     svg.append(t);
   });
   opts.rowLabels.forEach((r, ri) => {
     const t = svgEl("text", {
-      x: margin.left - 8, y: margin.top + 24 + ri * cell + cell / 2 + 3, "text-anchor": "end", "font-size": 10, fill: "var(--chart-text)",
+      x: margin.left - 8, y: margin.top + 26 + ri * cell + cell / 2 + 3, "text-anchor": "end", "font-size": 13, "font-weight": 600, fill: "var(--chart-text)",
     });
     t.textContent = r;
     svg.append(t);
@@ -255,10 +271,10 @@ export function heatmap(opts: HeatmapOptions): HTMLDivElement {
       const t01 = Math.min(1, v / maxV);
       const fill = mixSequential(t01);
       const x = margin.left + ci * cell;
-      const y = margin.top + 24 + ri * cell;
+      const y = margin.top + 26 + ri * cell;
       svg.append(svgEl("rect", { x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4, fill }));
       const label = svgEl("text", {
-        x: x + cell / 2, y: y + cell / 2 + 4, "text-anchor": "middle", "font-size": 11, "font-weight": 700,
+        x: x + cell / 2, y: y + cell / 2 + 5, "text-anchor": "middle", "font-size": 15, "font-weight": 700,
         fill: t01 > 0.55 ? "#fff" : "var(--ink)",
       });
       label.textContent = opts.valueFormat ? opts.valueFormat(v) : String(Math.round(v));

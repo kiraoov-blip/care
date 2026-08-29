@@ -155,13 +155,22 @@ function monthlyChangeTable(monthlyChange: MonthlyChangeRow[]): HTMLDivElement {
   return renderTable(columns, rows);
 }
 
-/** 연간 사용량 증감률 분포 막대(원본 pd.cut(customers["연간사용량증감률"], [...])). */
+/** 연간 사용량 증감률 분포 막대(원본 pd.cut(customers["연간사용량증감률"], [...])).
+ * 구간을 기존 5단계(20%감소/5~20%감소/±5%이내/5~20%증가/20%증가)에서 7단계로
+ * 더 세분화해 달라는 요청 — 5~20%였던 두 구간을 각각 5~10%/10~20%로 한 번 더
+ * 나눴다. 높이(height)는 옆 카드의 "월별 변화표"(12개월 행 + 헤더)와 시각적으로
+ * 맞도록 기본값(240)보다 훨씬 크게(460) 지정한다 — .card-row가 flex(기본
+ * align-items:stretch)라 두 카드의 세로 길이는 이미 같아지지만, 차트 자체의
+ * viewBox 비율이 낮으면 카드 안에서 위쪽에 작게 그려지고 아래가 빈 채로 남으므로
+ * viewBox 높이 자체를 표 높이에 맞춰 키운다. */
 function usageChangeDistributionChart(enriched: EnrichedCustomer[]): HTMLDivElement {
   const bins: { label: string; test: (v: number) => boolean }[] = [
     { label: "20% 이상 감소", test: (v) => v <= -0.2 },
-    { label: "5~20% 감소", test: (v) => v > -0.2 && v <= -0.05 },
+    { label: "10~20% 감소", test: (v) => v > -0.2 && v <= -0.1 },
+    { label: "5~10% 감소", test: (v) => v > -0.1 && v <= -0.05 },
     { label: "±5% 이내", test: (v) => v > -0.05 && v <= 0.05 },
-    { label: "5~20% 증가", test: (v) => v > 0.05 && v <= 0.2 },
+    { label: "5~10% 증가", test: (v) => v > 0.05 && v <= 0.1 },
+    { label: "10~20% 증가", test: (v) => v > 0.1 && v <= 0.2 },
     { label: "20% 이상 증가", test: (v) => v > 0.2 },
   ];
   const counts = bins.map(() => 0);
@@ -175,6 +184,7 @@ function usageChangeDistributionChart(enriched: EnrichedCustomer[]): HTMLDivElem
   return barChart({
     data,
     width: 560, // card-row 절반 폭 카드에 들어가므로 전체 폭 기본값(820) 대신 좁게 지정
+    height: 460, // 옆 "월별 변화표"(12행) 높이에 맞춰 세로로 늘린다(기본값 240 → 460)
     valueFormat: (v) => `${total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"}%`,
   });
 }

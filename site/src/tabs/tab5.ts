@@ -23,6 +23,7 @@ import {
   insightBanner,
   sectionCard,
   cardRow,
+  collapsibleSection,
 } from "../ui.js";
 import { barChart, type BarDatum } from "../charts.js";
 import {
@@ -217,7 +218,8 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   root.append(annualTransitionTable(tariffDynamic.annualTransition));
 
   // ── 연간 추천요금제 고객표(필터·정렬) ──
-  root.append(...subheading("연간 추천요금제 고객표"));
+  // 페이지가 너무 길어진다는 요청으로, 필터·표·CSV 버튼을 클릭해야 펼쳐지는
+  // 접이식 절로 바꾼다(닫혀 있을 때는 제목 한 줄만 차지한다).
   const annualPlanFilterControl = selectField(
     "연간 추천요금제 필터",
     [{ value: "전체", label: "전체" }, ...PLAN_ORDER.map((p) => ({ value: p, label: p }))],
@@ -236,7 +238,6 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
       renderTab5(root, ctx);
     }
   );
-  root.append(controlsRow([annualPlanFilterControl, annualSortControl]));
 
   let annualShow = annualSelected;
   if (annualPlanFilter !== "전체") annualShow = annualShow.filter((a) => a.연간추천요금제 === annualPlanFilter);
@@ -254,19 +255,21 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
     { key: "연간TOU대비절감(원)", label: "연간TOU대비절감(원)", kind: "money" },
   ];
   const annualShowRows = annualShow as unknown as Record<string, unknown>[];
-  root.append(renderTable(annualShowColumns, annualShowRows, { height: 420 }));
   root.append(
-    downloadCsvButton(
-      "연간 추천요금제 고객표 CSV",
-      `v30_${annualYear}_연간추천요금제.csv`,
-      annualShowColumns,
-      annualShowRows
-    )
+    collapsibleSection("연간 추천요금제 고객표", [
+      controlsRow([annualPlanFilterControl, annualSortControl]),
+      renderTable(annualShowColumns, annualShowRows, { height: 420 }),
+      downloadCsvButton(
+        "연간 추천요금제 고객표 CSV",
+        `v30_${annualYear}_연간추천요금제.csv`,
+        annualShowColumns,
+        annualShowRows
+      ),
+    ])
   );
 
-  // ── 3. 월말 사용량 예측성능 ──
-  root.append(...subheading("월말 사용량 예측성능", { step: 3 }));
-  root.append(forecastPerformanceTable(state.enriched));
+  // ── 3. 월말 사용량 예측성능 ── (마찬가지로 접이식 절로 바꾼다.)
+  root.append(collapsibleSection("월말 사용량 예측성능", [forecastPerformanceTable(state.enriched)], { step: 3 }));
 }
 
 /** value_counts().reindex(PLAN_ORDER, fill_value=0)와 동일: PLAN_ORDER 순서로 개수를 센다. */

@@ -29,6 +29,7 @@ import {
   sectionTitle,
   subheading,
   insightBanner,
+  collapsibleSection,
 } from "../ui.js";
 import { lineChart } from "../charts.js";
 import { SEASON_MONTHS, type Season, aggregatePortfolioProfile } from "../../../lib/timeseries.js";
@@ -327,7 +328,8 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
     })
   );
 
-  root.append(...subheading("100가구 표본 고객목록"));
+  // 클릭해야 펼쳐지는 접이식 절로 바꾼다(요청 반영) — 100행짜리 표가 항상 펼쳐져
+  // 있으면 화면을 많이 차지한다.
   const psColumns: ColumnSpec<PortfolioRow>[] = [
     { key: "고객ID", label: "고객ID", kind: "text" },
     { key: "2024년 연간 사용량(kWh)", label: "2024년 연간 사용량(kWh)", kind: "number" },
@@ -336,7 +338,7 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
     { key: "2024년 그룹 유형", label: "2024년 그룹 유형", kind: "text" },
     { key: "2025년 그룹 유형", label: "2025년 그룹 유형", kind: "text" },
   ];
-  root.append(renderTable(psColumns, portfolioSorted, { height: 420 }));
+  root.append(collapsibleSection("100가구 표본 고객목록", [renderTable(psColumns, portfolioSorted, { height: 420 })]));
 
   // ── 알려진 편차 2: ZIP 대신 CSV 2개(고객목록·변압기제어상세) ──
   const psCsvRows = portfolioSorted.map((r) => roundRow(r, psColumns));
