@@ -427,6 +427,11 @@ table.data-table thead th {
      단위("(kWh)" 등) 앞에서도 자연스러운 줄바꿈 지점이 생긴다. */
   word-break: keep-all;
 }
+/* 위 text-transform:uppercase가 헤더 전체(한글+괄호 단위)에 적용되면
+   "사용량(kWh)"의 단위 부분까지 "KWH"처럼 대문자로 바뀌어 버린다 —
+   headerLabelHtml()이 괄호 단위를 감싸 두는 <span>에는 표시용 원래
+   대소문자(kWh 등)를 그대로 지키도록 여기서만 uppercase를 되돌린다. */
+table.data-table thead th span[style*="white-space:nowrap"] { text-transform: none; }
 /* 숫자 열(.num)만 5em 최소 폭을 유지한다 — "연간사용량 (kWh)"처럼 긴 복합
    단위 라벨이 두 줄로 접힐 때 필요한 폭이다. "월"·"그룹"·"연도"처럼 글자 수가
    짧은 텍스트 열까지 똑같이 5em 바닥을 깔면 실제 내용보다 열이 불필요하게

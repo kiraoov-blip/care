@@ -77,6 +77,8 @@ function roundRowForCsv(row: MonitorRow, columns: { key: string; label: string }
 // 자리수가 많아 표가 넓어지고 좌우 스크롤이 잘 생긴다. 다만 CSV 다운로드까지 만원
 // 단위로 바꾸면 원본 데이터와 단위가 달라져 헷갈릴 수 있으므로, CSV는 기존과 동일하게
 // 원 단위 그대로 내려받도록 화면표시용(DISPLAY)과 CSV용(CSV) 열 정의를 분리한다.
+// 헤더에 이미 "(%)" 단위가 있는 열은 kind:"number"로 둬 칸 안 숫자의 "%"
+// 중복을 없앤다(화면 표시용 DISPLAY/COMPACT 열만 — CSV는 원본 방식 유지).
 const ANNUAL_DISPLAY_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
   { key: "고객ID", label: "고객ID", kind: "text" },
   { key: "그룹", label: "그룹", kind: "text" },
@@ -88,9 +90,9 @@ const ANNUAL_DISPLAY_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
   { key: "프리미엄형(원)", label: "프리미엄형(만원)", kind: "manwon", get: (r) => r["프리미엄형(원)"] },
   { key: "추천요금제", label: "추천요금제", kind: "text" },
   { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
-  { key: "기본형제공량사용률(%)", label: "기본형제공량사용률(%)", kind: "percent" },
-  { key: "프리미엄형제공량사용률(%)", label: "프리미엄형제공량사용률(%)", kind: "percent" },
-  { key: "2024→2025증감률(%)", label: "2024→2025증감률(%)", kind: "percent" },
+  { key: "기본형제공량사용률(%)", label: "기본형제공량사용률(%)", kind: "number" },
+  { key: "프리미엄형제공량사용률(%)", label: "프리미엄형제공량사용률(%)", kind: "number" },
+  { key: "2024→2025증감률(%)", label: "2024→2025증감률(%)", kind: "number" },
   { key: "패턴안정성점수", label: "패턴안정성점수", kind: "number" },
   { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
 ];
@@ -127,10 +129,10 @@ const MONTHLY_DISPLAY_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [
   { key: "프리미엄형(원)", label: "프리미엄형(만원)", kind: "manwon", get: (r) => r["프리미엄형(원)"] },
   { key: "추천요금제", label: "추천요금제", kind: "text" },
   { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
-  { key: "기본형제공량사용률(%)", label: "기본형제공량사용률(%)", kind: "percent" },
-  { key: "프리미엄형제공량사용률(%)", label: "프리미엄형제공량사용률(%)", kind: "percent" },
+  { key: "기본형제공량사용률(%)", label: "기본형제공량사용률(%)", kind: "number" },
+  { key: "프리미엄형제공량사용률(%)", label: "프리미엄형제공량사용률(%)", kind: "number" },
   { key: "알림단계", label: "알림단계", kind: "text" },
-  { key: "예측오차(%)", label: "예측오차(%)", kind: "percent" },
+  { key: "예측오차(%)", label: "예측오차(%)", kind: "number" },
   { key: "패턴안정성점수", label: "패턴안정성점수", kind: "number" },
   { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
 ];
@@ -145,7 +147,7 @@ const ANNUAL_COMPACT_COLUMNS: ColumnSpec<AnnualMonitorRow>[] = [
   { key: "연간사용량(kWh)", label: "연간사용량(kWh)", kind: "number" },
   { key: "추천요금제", label: "추천요금제", kind: "text" },
   { key: "TOU대비절감(원)", label: "TOU대비절감(만원)", kind: "manwon", get: (r) => r["TOU대비절감(원)"] },
-  { key: "2024→2025증감률(%)", label: "2024→2025증감률(%)", kind: "percent" },
+  { key: "2024→2025증감률(%)", label: "2024→2025증감률(%)", kind: "number" },
   { key: "수요관리우선점수", label: "수요관리우선점수", kind: "number" },
 ];
 const MONTHLY_COMPACT_COLUMNS: ColumnSpec<MonthlyMonitorRow>[] = [

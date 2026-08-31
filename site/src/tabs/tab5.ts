@@ -191,13 +191,17 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
 
   root.append(monthlySummaryTable(tariffDynamic.monthlySummary.filter((r) => r.연도 === monthlyYear)));
 
+  // 이 화면표 열은 원 단위 그대로면 자릿수가 커서 표가 넓어진다 — 다른 탭의
+  // 금액 열과 동일하게 만원 단위(소수 1자리)로 표시하고, ₩ 기호가 붙는
+  // kind:"money" 대신 kind:"manwon"으로 바꾼다. toCsv()는 kind와 무관하게
+  // row의 원본(원 단위) 값을 그대로 내보내므로 CSV 다운로드 내용은 바뀌지 않는다.
   const monthlyShowColumns: ColumnSpec<Record<string, unknown>>[] = [
     { key: "고객ID", label: "고객ID", kind: "text" },
     { key: "사용량(kWh)", label: "사용량(kWh)", kind: "number" },
-    { key: "일반주택용(원)", label: "일반주택용(원)", kind: "money" },
-    { key: "제주TOU(원)", label: "제주TOU(원)", kind: "money" },
-    { key: "기본형(원)", label: "기본형(원)", kind: "money" },
-    { key: "프리미엄형(원)", label: "프리미엄형(원)", kind: "money" },
+    { key: "일반주택용(원)", label: "일반주택용(만원)", kind: "manwon" },
+    { key: "제주TOU(원)", label: "제주TOU(만원)", kind: "manwon" },
+    { key: "기본형(원)", label: "기본형(만원)", kind: "manwon" },
+    { key: "프리미엄형(원)", label: "프리미엄형(만원)", kind: "manwon" },
     { key: "월별추천요금제", label: "월별추천요금제", kind: "text" },
     { key: "연간추천요금제", label: "연간추천요금제", kind: "text" },
     { key: "월·연간추천일치", label: "월·연간추천일치", kind: "text" },
@@ -243,16 +247,19 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   if (annualPlanFilter !== "전체") annualShow = annualShow.filter((a) => a.연간추천요금제 === annualPlanFilter);
   annualShow = [...annualShow].sort((a, b) => b[annualSort] - a[annualSort]);
 
+  // (위 monthlyShowColumns와 동일한 이유로) money(₩ 기호) 대신 manwon(만원
+  // 단위, 소수 1자리)으로 표시한다 — CSV는 toCsv()가 원본 원 단위 값을 그대로
+  // 내보내므로 영향이 없다.
   const annualShowColumns: ColumnSpec<Record<string, unknown>>[] = [
     { key: "고객ID", label: "고객ID", kind: "text" },
     { key: "연간사용량(kWh)", label: "연간사용량(kWh)", kind: "number" },
     { key: "월평균사용량(kWh)", label: "월평균사용량(kWh)", kind: "number" },
-    { key: "일반주택용(원)", label: "일반주택용(원)", kind: "money" },
-    { key: "제주TOU(원)", label: "제주TOU(원)", kind: "money" },
-    { key: "기본형(원)", label: "기본형(원)", kind: "money" },
-    { key: "프리미엄형(원)", label: "프리미엄형(원)", kind: "money" },
+    { key: "일반주택용(원)", label: "일반주택용(만원)", kind: "manwon" },
+    { key: "제주TOU(원)", label: "제주TOU(만원)", kind: "manwon" },
+    { key: "기본형(원)", label: "기본형(만원)", kind: "manwon" },
+    { key: "프리미엄형(원)", label: "프리미엄형(만원)", kind: "manwon" },
     { key: "연간추천요금제", label: "연간추천요금제", kind: "text" },
-    { key: "연간TOU대비절감(원)", label: "연간TOU대비절감(원)", kind: "money" },
+    { key: "연간TOU대비절감(원)", label: "연간TOU대비절감(만원)", kind: "manwon" },
   ];
   const annualShowRows = annualShow as unknown as Record<string, unknown>[];
   root.append(
@@ -295,7 +302,8 @@ function annualSummaryTable(rows: AnnualSummaryRow[]): HTMLDivElement {
     { key: "고객당평균연간요금(원)", label: "고객당평균연간요금(만원)", kind: "manwon" },
     { key: "고객당평균월요금(원)", label: "고객당평균월요금(만원)", kind: "manwon" },
     { key: "연간추천고객수", label: "연간 추천 고객 수(명)", kind: "count" },
-    { key: "연간추천비중(%)", label: "연간추천비중(%)", kind: "percent" },
+    // 헤더에 이미 "(%)" 단위가 있으므로 kind:"number"로 칸 안 숫자의 "%" 중복을 없앤다.
+    { key: "연간추천비중(%)", label: "연간추천비중(%)", kind: "number" },
   ];
   return renderTable(columns, rows as unknown as Record<string, unknown>[]);
 }
@@ -306,7 +314,7 @@ function annualTransitionTable(rows: AnnualTransitionRow[]): HTMLDivElement {
     { key: "2024 연간추천", label: "2024 연간추천", kind: "text" },
     { key: "2025 연간추천", label: "2025 연간추천", kind: "text" },
     { key: "고객수", label: "고객수", kind: "count" },
-    { key: "2024 추천군 내 비중(%)", label: "2024 추천군 내 비중(%)", kind: "percent" },
+    { key: "2024 추천군 내 비중(%)", label: "2024 추천군 내 비중(%)", kind: "number" },
   ];
   return renderTable(columns, rows as unknown as Record<string, unknown>[]);
 }
@@ -326,7 +334,8 @@ function monthlySummaryTable(rows: MonthlySummaryRow[]): HTMLDivElement {
     { key: "월", label: "월", kind: "text" },
     { key: "요금제", label: "요금제", kind: "text" },
     { key: "월별추천고객수", label: "월별추천고객수", kind: "count" },
-    { key: "월별추천비중(%)", label: "월별추천비중(%)", kind: "percent" },
+    // 헤더에 이미 "(%)" 단위가 있으므로 kind:"number"로 칸 안 숫자의 "%" 중복을 없앤다.
+    { key: "월별추천비중(%)", label: "월별추천비중(%)", kind: "number" },
   ];
   return renderTable(columns, display, { height: 320 });
 }
@@ -347,12 +356,13 @@ function forecastPerformanceTable(enriched: EnrichedCustomer[]): HTMLDivElement 
     "15일예측_오차10%이내(%)": Number(c["15일예측_오차10%이내"]) * 100,
     "20일예측_오차10%이내(%)": Number(c["20일예측_오차10%이내"]) * 100,
   }));
+  // 헤더에 이미 "(%)" 단위가 있으므로 kind:"number"로 칸 안 숫자의 "%" 중복을 없앤다.
   const columns: ColumnSpec<Row>[] = [
     { key: "고객ID", label: "고객ID", kind: "text" },
-    { key: "15일예측_MAPE(%)", label: "15일예측_MAPE(%)", kind: "percent" },
-    { key: "20일예측_MAPE(%)", label: "20일예측_MAPE(%)", kind: "percent" },
-    { key: "15일예측_오차10%이내(%)", label: "15일예측_오차10%이내(%)", kind: "percent" },
-    { key: "20일예측_오차10%이내(%)", label: "20일예측_오차10%이내(%)", kind: "percent" },
+    { key: "15일예측_MAPE(%)", label: "15일예측_MAPE(%)", kind: "number" },
+    { key: "20일예측_MAPE(%)", label: "20일예측_MAPE(%)", kind: "number" },
+    { key: "15일예측_오차10%이내(%)", label: "15일예측_오차10%이내(%)", kind: "number" },
+    { key: "20일예측_오차10%이내(%)", label: "20일예측_오차10%이내(%)", kind: "number" },
   ];
   return renderTable(columns, rows, { height: 420 });
 }

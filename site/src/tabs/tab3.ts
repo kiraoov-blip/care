@@ -273,6 +273,9 @@ function renderAnnualDiagnosis(root: HTMLElement, ctx: AppContext, cid: string, 
 
 type AnnualBillRow = { 연도: string; 요금제: PlanName; "연간요금(원)": number; "월평균요금(원)": number; 판정: string };
 
+/** annualBillTable(원): 값 자체는 원본 원 단위를 그대로 두고, 화면 표시만 만원
+ * 단위(소수 1자리)로 변환한다 — 원 단위 그대로면 자릿수가 커서 표가 넓어지고,
+ * 원(₩) 기호가 붙는 kind:"money"는 "원단위 기호" 표시라는 요청과도 맞지 않는다. */
 function annualBillTable(annualCustomer: AnnualCustomerRow[], cid: string): HTMLDivElement {
   const rows: AnnualBillRow[] = [];
   for (const y of [2024, 2025] as const) {
@@ -294,8 +297,8 @@ function annualBillTable(annualCustomer: AnnualCustomerRow[], cid: string): HTML
   const columns: ColumnSpec<AnnualBillRow>[] = [
     { key: "연도", label: "연도", kind: "text" },
     { key: "요금제", label: "요금제", kind: "text" },
-    { key: "연간요금(원)", label: "연간요금(원)", kind: "money" },
-    { key: "월평균요금(원)", label: "월평균요금(원)", kind: "money" },
+    { key: "연간요금(원)", label: "연간요금(만원)", kind: "manwon" },
+    { key: "월평균요금(원)", label: "월평균요금(만원)", kind: "manwon" },
     { key: "판정", label: "판정", kind: "text" },
   ];
   return renderFullTextTable(columns, rows);

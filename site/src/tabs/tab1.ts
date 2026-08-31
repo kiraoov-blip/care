@@ -144,14 +144,18 @@ function monthlyChangeTable(monthlyChange: MonthlyChangeRow[]): HTMLDivElement {
     "경부하 비중 증감(%p)": r.경부하비중증감p * 100,
     "최대부하 비중 증감(%p)": r.최대부하비중증감p * 100,
   }));
+  // 헤더에 이미 "(%)"/"(%p)" 단위가 있으므로 kind:"number"로 바꿔 칸 안
+  // 숫자의 "%" 중복을 없앤다(탭4의 동일 수정과 같은 방식). "%p" 열은 원래도
+  // kind:"percent"가 실제 단위(%p)와 다른 "%" 기호를 붙이던 것이라 이번에
+  // 함께 바로잡는다.
   const columns: ColumnSpec<Record<string, unknown>>[] = [
     { key: "월", label: "월", kind: "text" },
     { key: "2024년 고객당 평균 사용량(kWh)", label: "2024년 고객당 평균 사용량(kWh)", kind: "number" },
     { key: "2025년 고객당 평균 사용량(kWh)", label: "2025년 고객당 평균 사용량(kWh)", kind: "number" },
     { key: "사용량 증감(kWh)", label: "사용량 증감(kWh)", kind: "number" },
-    { key: "증감률(%)", label: "증감률(%)", kind: "percent" },
-    { key: "경부하 비중 증감(%p)", label: "경부하 비중 증감(%p)", kind: "percent" },
-    { key: "최대부하 비중 증감(%p)", label: "최대부하 비중 증감(%p)", kind: "percent" },
+    { key: "증감률(%)", label: "증감률(%)", kind: "number" },
+    { key: "경부하 비중 증감(%p)", label: "경부하 비중 증감(%p)", kind: "number" },
+    { key: "최대부하 비중 증감(%p)", label: "최대부하 비중 증감(%p)", kind: "number" },
   ];
   return renderTable(columns, rows);
 }

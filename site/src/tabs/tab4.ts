@@ -165,7 +165,9 @@ function transitionDetailTable(transition: ClusterTransitionRow[]): HTMLDivEleme
     { key: "2024년 그룹", label: "2024년 그룹", kind: "text" },
     { key: "2025년 그룹", label: "2025년 그룹", kind: "text" },
     { key: "고객수(명)", label: "고객수(명)", kind: "count" },
-    { key: "2024년 그룹 내 비중(%)", label: "2024년 그룹 내 비중(%)", kind: "percent" },
+    // 헤더에 이미 "(%)" 단위가 있으므로 위 clusterSummaryTable과 동일하게
+    // kind:"number"로 바꿔 칸 안 숫자의 "%" 중복을 없앤다.
+    { key: "2024년 그룹 내 비중(%)", label: "2024년 그룹 내 비중(%)", kind: "number" },
   ];
   return renderTable(columns, rows);
 }
