@@ -94,7 +94,7 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
   // min-width로 뷰박스 폭을 강제해 스크롤을 만들 필요가 없다 — 다만 아주 좁은
   // 기기(320px 이하 구형 휴대폰 등) 대비 최소한의 안전판으로 .chart-block의
   // overflow-x:auto(styles.css)는 그대로 남겨 둔다.
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `aspect-ratio:${width}/${height}` });
 
   // 단위를 축 맨 위에 한 번만 표시(요청 반영) — yFormat(0)에서 뽑아낸다.
   const unit = opts.yFormat ? extractUnit(opts.yFormat(0)) : "";
@@ -294,7 +294,7 @@ export function barChart(opts: BarChartOptions): HTMLDivElement {
   const maxIdx = opts.highlightMax ? opts.data.findIndex((d) => d.value === maxRawV) : -1;
 
   // svg.chart{width:100%;height:auto}로 카드 폭을 채운다(라인차트와 같은 이유 — 위 주석 참고).
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `aspect-ratio:${width}/${height}` });
   svg.append(svgEl("line", { x1: margin.left, x2: width - margin.right, y1: margin.top + innerH, y2: margin.top + innerH, stroke: "var(--chart-grid)", "stroke-width": 1 }));
 
   opts.data.forEach((d, i) => {
@@ -337,53 +337,61 @@ export interface HeatmapOptions {
  * 뷰박스가 넓으면 svg.chart{width:100%}가 전체를 축소해 글자까지 작아지고, 반대로
  * 강제로 최소 폭을 지키면 옆으로 스크롤이 생긴다. 화면 구간별로 폭과 함께 칸
  * 최소 크기도 낮춰 줘야(모바일 30px, 데스크톱 46px) 그룹 수가 많아도(최대 8x8)
- * 실제로 한 화면 폭 안에 다 들어간다. */
-function responsiveHeatmapFit(): { width: number; cellMin: number; cellMax: number } {
-  if (typeof window === "undefined") return { width: 1000, cellMin: 46, cellMax: 92 };
+ * 실제로 한 화면 폭 안에 다 들어간다.
+ * heightRatio: 칸의 세로/가로 비율 — 모바일·절반 창은 1(정사각형)을 유지해 달라는
+ * 요청이지만, 전체 웹 화면(데스크톱)은 그룹 수가 늘어날수록(최대 8x8) 세로로 너무
+ * 길어져 한 화면에 안 들어온다는 요청으로 정사각형 대신 더 낮은 직사각형(0.62)으로
+ * 눌러, 가로 폭은 넉넉히 쓰되 세로 길이는 압축한다. */
+function responsiveHeatmapFit(): { width: number; cellMin: number; cellMax: number; heightRatio: number } {
+  if (typeof window === "undefined") return { width: 1000, cellMin: 46, cellMax: 92, heightRatio: 0.62 };
   const vw = window.innerWidth;
-  if (vw <= 640) return { width: 360, cellMin: 30, cellMax: 60 }; // 휴대폰
-  if (vw <= 900) return { width: 640, cellMin: 38, cellMax: 76 }; // 절반 창·태블릿
-  return { width: 1000, cellMin: 46, cellMax: 92 }; // 데스크톱(기존과 동일)
+  if (vw <= 640) return { width: 360, cellMin: 30, cellMax: 60, heightRatio: 1 }; // 휴대폰: 정사각형 유지
+  if (vw <= 900) return { width: 640, cellMin: 38, cellMax: 76, heightRatio: 1 }; // 절반 창·태블릿: 정사각형 유지
+  return { width: 1000, cellMin: 46, cellMax: 92, heightRatio: 0.62 }; // 데스크톱: 직사각형으로 눌러 세로 길이 절약
 }
 
 /** 순차(sequential) 색상 히트맵 — --chart-seq-100/400/700 세 단계를 보간해 쓴다. */
 export function heatmap(opts: HeatmapOptions): HTMLDivElement {
   const fit = opts.fitWidth
-    ? { width: opts.fitWidth, cellMin: 46, cellMax: 92 }
+    ? { width: opts.fitWidth, cellMin: 46, cellMax: 92, heightRatio: 1 }
     : responsiveHeatmapFit();
   // 행 라벨을 "그룹 1"처럼 짧게 통일했으므로(호출부 tab4.ts), 왼쪽 여백도 그만큼
   // 줄어든다 — 예전(전체 그룹 설명 문구, char당 9px)에는 최소 96px을 깔아야 했지만,
   // 이제는 실제 짧은 라벨 길이만큼만(char당 11px, 최소 40px) 확보하면 된다.
   const margin = { top: 10, right: 8, bottom: 8, left: Math.max(40, ...opts.rowLabels.map((r) => r.length * 11)) };
-  // 칸 크기를 fit.width에 맞춰 늘리거나 줄인다(fit.cellMin~fit.cellMax 사이) —
+  // 칸 가로 폭을 fit.width에 맞춰 늘리거나 줄인다(fit.cellMin~fit.cellMax 사이) —
   // 카드는 넓은데 히트맵만 작게 그려져 여백이 남거나, 반대로 칸이 화면보다 넓어져
-  // 스크롤이 생기는 문제를 함께 해결한다.
-  const cell = Math.max(fit.cellMin, Math.min(fit.cellMax, (fit.width - margin.left - margin.right) / Math.max(1, opts.colLabels.length)));
-  const width = margin.left + margin.right + opts.colLabels.length * cell;
-  const height = margin.top + margin.bottom + opts.rowLabels.length * cell + 26;
+  // 스크롤이 생기는 문제를 함께 해결한다. 세로 칸 높이(cellH)는 가로 폭에
+  // heightRatio를 곱해 구한다 — 데스크톱은 1보다 작아 정사각형이 아닌 납작한
+  // 직사각형 칸이 되고, 모바일·절반 창은 1이라 기존과 같은 정사각형을 유지한다.
+  const cellW = Math.max(fit.cellMin, Math.min(fit.cellMax, (fit.width - margin.left - margin.right) / Math.max(1, opts.colLabels.length)));
+  const cellH = cellW * fit.heightRatio;
+  const width = margin.left + margin.right + opts.colLabels.length * cellW;
+  const height = margin.top + margin.bottom + opts.rowLabels.length * cellH + 26;
   const maxV = Math.max(1, ...opts.matrix.flat());
   // 칸(cell)이 좁아지는 모바일에서는 "그룹 1"·"그룹 2"처럼 짧아진 라벨이라도 13px
   // 그대로 쓰면 옆 칸 라벨과 글자가 겹쳐 붙어 보인다 — 칸 크기에 맞춰 라벨·칸 안
   // 숫자 폰트도 함께 줄인다(칸이 넓은 데스크톱 등은 기존 13/15px 그대로 유지).
-  const axisFontSize = cell < 45 ? 11 : 13;
-  const valueFontSize = cell < 45 ? 12 : 15;
+  const minCell = Math.min(cellW, cellH);
+  const axisFontSize = minCell < 45 ? 11 : 13;
+  const valueFontSize = minCell < 45 ? 12 : 15;
 
   // width 자체를 화면 폭에 맞춰 미리 고르므로(위 responsiveHeatmapFit), lineChart와
   // 동일하게 svg.chart{width:100%;height:auto}(styles.css 공통 규칙)에 맡겨 컨테이너에
   // 꼭 맞게 스케일되게 한다 — 고정 px 폭을 강제하지 않아 좌우 스크롤이 생기지 않는다.
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `aspect-ratio:${width}/${height}` });
   // 축 라벨(그룹 이름)·칸 안 숫자 모두 가독성이 떨어진다는 요청으로 10px→13px,
   // 11px→15px(굵게)로 키웠다.
   opts.colLabels.forEach((c, ci) => {
     const t = svgEl("text", {
-      x: margin.left + ci * cell + cell / 2, y: margin.top + 14, "text-anchor": "middle", "font-size": axisFontSize, "font-weight": 600, fill: "var(--chart-text)",
+      x: margin.left + ci * cellW + cellW / 2, y: margin.top + 14, "text-anchor": "middle", "font-size": axisFontSize, "font-weight": 600, fill: "var(--chart-text)",
     });
     t.textContent = c;
     svg.append(t);
   });
   opts.rowLabels.forEach((r, ri) => {
     const t = svgEl("text", {
-      x: margin.left - 8, y: margin.top + 26 + ri * cell + cell / 2 + 3, "text-anchor": "end", "font-size": axisFontSize, "font-weight": 600, fill: "var(--chart-text)",
+      x: margin.left - 8, y: margin.top + 26 + ri * cellH + cellH / 2 + 3, "text-anchor": "end", "font-size": axisFontSize, "font-weight": 600, fill: "var(--chart-text)",
     });
     t.textContent = r;
     svg.append(t);
@@ -391,11 +399,11 @@ export function heatmap(opts: HeatmapOptions): HTMLDivElement {
       const v = opts.matrix[ri]?.[ci] ?? 0;
       const t01 = Math.min(1, v / maxV);
       const fill = mixSequential(t01);
-      const x = margin.left + ci * cell;
-      const y = margin.top + 26 + ri * cell;
-      svg.append(svgEl("rect", { x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4, fill }));
+      const x = margin.left + ci * cellW;
+      const y = margin.top + 26 + ri * cellH;
+      svg.append(svgEl("rect", { x: x + 1, y: y + 1, width: cellW - 2, height: cellH - 2, rx: 4, fill }));
       const label = svgEl("text", {
-        x: x + cell / 2, y: y + cell / 2 + 5, "text-anchor": "middle", "font-size": valueFontSize, "font-weight": 700,
+        x: x + cellW / 2, y: y + cellH / 2 + 5, "text-anchor": "middle", "font-size": valueFontSize, "font-weight": 700,
         fill: t01 > 0.55 ? "#fff" : "var(--ink)",
       });
       label.textContent = opts.valueFormat ? opts.valueFormat(v) : String(Math.round(v));

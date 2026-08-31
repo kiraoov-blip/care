@@ -104,14 +104,18 @@ function clusterSummaryTable(summary: ClusterSummaryRow[]): HTMLDivElement {
     return b.고객수 - a.고객수;
   });
 
+  // 헤더에 이미 "(%)" 단위가 붙어 있으므로(예: "비중(%)"), kind:"percent"가 칸마다
+  // 또 "%"를 붙이면 "19.5%"처럼 단위가 두 번 나온다 — 이 표(그룹별 연도별 요약)만
+  // kind:"number"로 바꿔 칸 안의 숫자에서는 "%"를 빼고, 소수 1자리 숫자만 보여준다
+  // (헤더의 "(%)" 표기는 그대로 유지).
   const columns: ColumnSpec<Row>[] = [
     { key: "그룹", label: "그룹", kind: "text" },
     { key: "연도", label: "연도", kind: "text" },
     { key: "고객수", label: "고객수", kind: "count" },
-    { key: "비중(%)", label: "비중(%)", kind: "percent" },
+    { key: "비중(%)", label: "비중(%)", kind: "number" },
     { key: "연간 사용량(kWh)", label: "연간 사용량(kWh)", kind: "number" },
     { key: "최대시간 사용량(kWh)", label: "최대시간 사용량(kWh)", kind: "number" },
-    ...PERCENTAGE_MAP.map(([, displayCol]) => ({ key: displayCol, label: displayCol, kind: "percent" as const })),
+    ...PERCENTAGE_MAP.map(([, displayCol]) => ({ key: displayCol, label: displayCol, kind: "number" as const })),
   ];
   return renderTable(columns, rows);
 }

@@ -216,7 +216,7 @@ function renderAnnualDiagnosis(root: HTMLElement, ctx: AppContext, cid: string, 
       return row ? row.사용량_kWh : null;
     }),
   }));
-  root.append(lineChart({ xLabels: months, series: cmSeries, xTickEvery: 1, yFormat: fmtKwh }));
+  root.append(lineChart({ xLabels: months, series: cmSeries, xTickEvery: 1, showMarkers: false, yFormat: fmtKwh }));
 
   // 연간 요금 및 연간 추천요금제
   root.append(...subheading("연간 요금 및 연간 추천요금제"));

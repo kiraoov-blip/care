@@ -21,8 +21,11 @@
   /* 결과 배너·체크박스 등에 쓰던 민트(초록) 계열을 따뜻한 노란색(amber) 계열로
    * 교체(요청 반영) — border/accent(--amber), 텍스트로 쓸 만큼 진한 톤(--amber-dark),
    * 옅은 배경(--amber-soft), 옅은 테두리(--amber-line) 네 역할은 기존 mint와 동일하게
-   * 유지한다. dataviz 스킬의 validate_palette.js로 각 값을 검증했다. */
-  --amber: #c99400;
+   * 유지한다. dataviz 스킬의 validate_palette.js로 각 값을 검증했다.
+   * "노란색이 누렇게(탁하게) 보인다"는 요청으로 --amber를 더 산뜻한 노란색으로
+   * 교체했다(아래 --chart-series-2와 동일한 값 — validate_palette.js로 주황
+   * (--chart-series-1) 대비 재검증: CVD ΔE 9.4, 정상시야 ΔE 16.4, 둘 다 기준 통과). */
+  --amber: #dbab00;
   --amber-dark: #7a5a10;
   --amber-soft: #faf0d0;
   --amber-line: #ecd68a;
@@ -42,9 +45,14 @@
 
   /* 차트 전용(dataviz 스킬 기본 팔레트에서 검증된 값 — categorical 2/4계열, sequential 1계열).
    * 2계열(2025·비교)을 초록에서 노란색으로 바꾸면서, 기존 4계열(amber 톤)과 색이
-   * 겹치게 되어 4계열은 자두색 계열로 다시 배정했다(validate_palette.js로 재검증). */
+   * 겹치게 되어 4계열은 자두색 계열로 다시 배정했다(validate_palette.js로 재검증).
+   * 이후 "노란색이 누렇게 보인다"는 요청으로 2계열 값을 더 산뜻한 노란색으로 다시
+   * 조정했다 — 순수 채도 높은 노랑(#eab308 등)은 validate_palette.js의 밝기 상한
+   * (OKLCH L<=0.77)을 넘겨 FAIL이라, 그 상한 바로 안쪽에서 채도를 최대한 끌어올린
+   * 값을 새로 찾아 주황(#eb6834)과의 대비를 재검증했다(CVD ΔE 9.4 deutan, 정상시야
+   * ΔE 16.4 — 목표 8·기준 15 모두 통과, --pairs all에서도 통과). */
   --chart-series-1: #eb6834; /* 2024·기준 계열 */
-  --chart-series-2: #d6a800; /* 2025·비교 계열(민트→노란색) */
+  --chart-series-2: #dbab00; /* 2025·비교 계열 */
   --chart-series-3: #2a78d6; /* 3~4계열째부터 추가 */
   --chart-series-4: #b0457a;
   --chart-seq-100: #cde2fb;
@@ -69,7 +77,12 @@
   --brand-line: #5c3f1e;
   --gold: #e8c463;
   --gold-soft: #3a3013;
-  --amber: #d0a828;
+  /* 라이트 모드와 같은 이유로 더 산뜻한 노란색으로 교체 — 다크 화면(--surface
+   * #241c12) 기준 dataviz 스킬 참조 팔레트의 노랑 슬롯 값을 그대로 썼다(밝기 대역
+   * ·대비는 통과, CVD는 6-8 경고대역이라 범례·직접 라벨 등 보조 표시가 이미 있는
+   * 이 앱에서는 허용 범위 — 현재 이 다크 배색은 화면에 토글이 없어 실제로 보이지
+   * 않지만, 나중에 토글이 추가될 때를 대비해 함께 맞춰 둔다). */
+  --amber: #c98500;
   --amber-dark: #f0d060;
   --amber-soft: #3a2f0c;
   --amber-line: #5c4a16;
@@ -84,8 +97,8 @@
   --red: #ec8271;
   --red-soft: #3a1e17;
   --warn-bg: #4a3413;
-  --chart-series-1: #f08a52;
-  --chart-series-2: #e8cc66;
+  --chart-series-1: #d95926;
+  --chart-series-2: #c98500;
   --chart-series-3: #6ea6ec;
   --chart-series-4: #c96a9c;
   --chart-seq-100: #16283f;
@@ -516,8 +529,15 @@ footer.app-footer {
   .main { padding: 0.9rem 0.8rem; }
   .sidebar { padding-left: 1rem; }
   .section-card { padding: 0.85rem; }
-  .card-row { flex-direction: column; }
-  .card-row > .section-card { flex: 1 1 auto; }
+  /* flex-direction:column 상태에서 SVG 차트가 CSS aspect-ratio로 크기를 잡을 때,
+     플렉스 아이템(.section-card)의 높이가 실제 콘텐츠보다 작게 계산되어 막대
+     그래프 하단 축이 카드 밖으로 살짝 나오는 문제가 있었다(半화면·데스크톱은
+     flex-direction:row라 영향 없음). display:block으로 바꾸면 각 카드 높이가
+     콘텐츠 높이를 그대로 따라가므로 이 버그를 근본적으로 피할 수 있다 — 세로
+     간격은 flex의 gap 대신 margin-bottom으로 동일하게(1rem) 유지한다. */
+  .card-row { display: block; }
+  .card-row > .section-card { flex: none; margin-bottom: 1rem; }
+  .card-row > .section-card:last-child { margin-bottom: 0; }
   .controls-row { gap: 0.5rem; }
   .control { min-width: 0; flex: 1 1 140px; }
   .control .radio-row label { font-size: 0.78rem; padding: 0.28rem 0.5rem; gap: 0.22rem; }

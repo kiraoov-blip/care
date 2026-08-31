@@ -127,6 +127,7 @@ function monthlyUsageLineChart(overallMonthly: OverallMonthlyRow[]): HTMLDivElem
     xLabels: months,
     series,
     xTickEvery: 1,
+    showMarkers: false,
     yFormat: fmtKwh,
     yLabel: "고객당 평균 사용량(kWh)",
   });
@@ -186,6 +187,7 @@ function usageChangeDistributionChart(enriched: EnrichedCustomer[]): HTMLDivElem
     width: 560, // card-row 절반 폭 카드에 들어가므로 전체 폭 기본값(820) 대신 좁게 지정
     height: 460, // 옆 "월별 변화표"(12행) 높이에 맞춰 세로로 늘린다(기본값 240 → 460)
     valueFormat: (v) => `${total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"}%`,
+    highlightMax: true,
   });
 }
 

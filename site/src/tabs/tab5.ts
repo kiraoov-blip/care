@@ -289,8 +289,11 @@ function annualSummaryTable(rows: AnnualSummaryRow[]): HTMLDivElement {
   const columns: ColumnSpec<Record<string, unknown>>[] = [
     { key: "연도", label: "연도", kind: "text" },
     { key: "요금제", label: "요금제", kind: "text" },
-    { key: "고객당평균연간요금(원)", label: "고객당평균연간요금(원)", kind: "money" },
-    { key: "고객당평균월요금(원)", label: "고객당평균월요금(원)", kind: "money" },
+    // 원 단위 그대로면 자릿수가 커서 표 폭이 넓어진다 — 만원 단위(소수 1자리)로
+    // 바꿔 달라는 요청으로 kind를 money→manwon으로, 라벨도 "(원)"→"(만원)"으로
+    // 맞춘다(값 자체는 원본 원 단위를 그대로 두고, 화면 표시만 변환한다).
+    { key: "고객당평균연간요금(원)", label: "고객당평균연간요금(만원)", kind: "manwon" },
+    { key: "고객당평균월요금(원)", label: "고객당평균월요금(만원)", kind: "manwon" },
     { key: "연간추천고객수", label: "연간 추천 고객 수(명)", kind: "count" },
     { key: "연간추천비중(%)", label: "연간추천비중(%)", kind: "percent" },
   ];
