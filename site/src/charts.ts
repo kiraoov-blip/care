@@ -32,6 +32,13 @@ export interface LineChartOptions {
   yFormat?: (v: number) => string;
   yLabel?: string;
   xTickEvery?: number;
+  /** x축 눈금을 정해진 값들만 표시하고 싶을 때(예: 24시간 그래프에서 1·3·6·9·12·15·
+   * 18·21·24시만). xLabels의 값과 정확히 일치하는 항목만 그린다 — 지정하면 xTickEvery는
+   * 무시된다. */
+  xTickValues?: (string | number)[];
+  /** false면 선 위의 점 마커(원)를 그리지 않는다 — 점이 촘촘한 24시간 그래프처럼 마커가
+   * 오히려 선을 가려 가독성을 해칠 때 쓴다. 기본값 true(기존과 동일). */
+  showMarkers?: boolean;
 }
 
 /** 화면 폭에 따라 라인차트의 "설계 폭"(viewBox width)을 다르게 골라준다 — 모바일과
@@ -108,10 +115,16 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
     label.textContent = unit ? formatted.slice(0, formatted.length - unit.length) : formatted;
     svg.append(label);
   }
-  // x축 라벨
+  // x축 라벨 — xTickValues가 있으면 그 값들만(예: 24시간 그래프의 1·3·6·9·12·15·18·
+  // 21·24시), 없으면 기존처럼 xTickEvery 간격으로 표시한다.
+  const tickValueSet = opts.xTickValues ? new Set(opts.xTickValues.map(String)) : null;
   const everyN = opts.xTickEvery ?? Math.max(1, Math.ceil(n / 12));
   opts.xLabels.forEach((lab, i) => {
-    if (i % everyN !== 0 && i !== n - 1) return;
+    if (tickValueSet) {
+      if (!tickValueSet.has(String(lab))) return;
+    } else if (i % everyN !== 0 && i !== n - 1) {
+      return;
+    }
     const t = svgEl("text", { x: xAt(i), y: height - 8, "text-anchor": "middle", "font-size": 12, fill: "var(--chart-text)" });
     t.textContent = String(lab);
     svg.append(t);
@@ -131,10 +144,12 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
     });
     if (s.dashed) path.setAttribute("stroke-dasharray", "5 4");
     svg.append(path);
-    s.values.forEach((v, i) => {
-      if (v === null || !Number.isFinite(v)) return;
-      svg.append(svgEl("circle", { cx: xAt(i), cy: yAt(v), r: 5, fill: "#fff", stroke: color, "stroke-width": 2 }));
-    });
+    if (opts.showMarkers !== false) {
+      s.values.forEach((v, i) => {
+        if (v === null || !Number.isFinite(v)) return;
+        svg.append(svgEl("circle", { cx: xAt(i), cy: yAt(v), r: 5, fill: "#fff", stroke: color, "stroke-width": 2 }));
+      });
+    }
   });
 
   // 호버 크로스헤어 + 히트타겟
@@ -208,6 +223,44 @@ export interface BarChartOptions {
   height?: number;
   valueFormat?: (v: number) => string;
   colorIndex?: number;
+  /** true면 값이 가장 큰 막대만 다른 색(--amber, 노란색 계열)으로 강조한다 — "가장 많은
+   * 분포에 해당하는 막대를 구분해 달라"는 탭5(요금분석 및 추천) 요청 전용 옵션이다.
+   * 지정하지 않으면 기존처럼 전부 같은 계열색을 쓴다. */
+  highlightMax?: boolean;
+}
+
+/** width를 명시하지 않은 호출(현재는 탭5의 카드-2열 분포 막대차트)에 한해 화면 폭에 맞는
+ * 기본 폭을 골라준다 — lineChart/heatmap과 같은 이유. card-row 두 카드가 데스크톱·절반
+ * 창에서는 나란히, 모바일에서는 세로로 쌓이므로(styles.css .card-row 모바일 분기) 폭
+ * 기준도 그에 맞춘다. width를 직접 지정하는 호출(탭1의 증감률 분포 등)에는 영향이 없다. */
+function responsiveBarChartWidth(): number {
+  if (typeof window === "undefined") return 560;
+  const vw = window.innerWidth;
+  if (vw <= 640) return 340; // 휴대폰: 카드가 세로로 쌓여 화면 폭 전체를 거의 그대로 차지
+  if (vw <= 900) return 300; // 절반 창: 카드 두 개가 나란히라 카드 하나당 폭이 좁음
+  return 460; // 데스크톱: 카드 두 개가 나란히 들어가는 실제 폭에 맞춤(기존 560보다 근접)
+}
+
+/** 라벨이 칸(slot) 폭보다 넓을 때 공백 지점에서 최대 2줄로 나눈다(표 헤더의
+ * keep-all 줄바꿈과 같은 발상) — "일반 주택용(저압)"처럼 긴 카테고리 이름이 옆
+ * 막대 라벨과 겹쳐 붙어 보이는 문제를 막는다. maxChars는 slot 폭에서 역산한
+ * "한 줄에 들어갈 대략적인 글자 수"다. */
+function wrapBarLabel(label: string, maxChars: number): string[] {
+  if (label.length <= maxChars) return [label];
+  const words = label.split(" ");
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const candidate = cur ? `${cur} ${w}` : w;
+    if (candidate.length > maxChars && cur) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = candidate;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines.slice(0, 2) : [label];
 }
 
 /** 단일 계열 막대차트 — 막대 위 직접 라벨(원본 px.bar(text=...) 대응), 인접 막대 사이 2px 갭.
@@ -215,16 +268,30 @@ export interface BarChartOptions {
  * 기준이다(탭5의 요금제 분포 막대). card-row 절반 폭에 들어가는 차트(탭1의 증감률
  * 분포)는 호출부에서 width:560을 명시로 지정한다. */
 export function barChart(opts: BarChartOptions): HTMLDivElement {
-  const width = opts.width ?? 820;
-  const height = opts.height ?? 240;
-  const margin = { top: 22, right: 16, bottom: 34, left: 46 };
-  const innerW = width - margin.left - margin.right;
-  const innerH = height - margin.top - margin.bottom;
+  const width = opts.width ?? responsiveBarChartWidth();
   const n = opts.data.length;
-  const maxV = Math.max(1, ...opts.data.map((d) => d.value)) * 1.18;
+  // 축 숫자·카테고리 라벨 가독성이 떨어진다는 요청으로 값 라벨 11→13px, 하단 카테고리
+  // 라벨 10.5→12.5px로 키웠다. margin.left/right는 라벨 줄바꿈과 무관하게 고정이므로
+  // slot(막대 하나당 폭)을 먼저 계산해, 카테고리 라벨이 이 폭보다 넓으면 최대 2줄로
+  // 접어(wrapBarLabel) 옆 막대 라벨과 겹쳐 붙어 보이지 않게 한다.
+  const margin0 = { top: 24, right: 16, left: 46 };
+  const innerW = width - margin0.left - margin0.right;
   const slot = innerW / Math.max(n, 1);
   const barW = Math.max(6, slot - 10);
+  const xFontSize = 12.5;
+  const maxChars = Math.max(3, Math.floor(slot / (xFontSize * 0.82)));
+  const wrappedLabels = opts.data.map((d) => wrapBarLabel(d.label, maxChars));
+  const xLineCount = Math.max(1, ...wrappedLabels.map((ls) => ls.length));
+  // 여러 줄이 되면(대개 2줄) 그만큼 아래 여백(margin.bottom)도 늘려, 하단 축 글자가
+  // 카드 밑변에 바짝 붙어 보이지 않게 한다(기존 34px → 기본 40px + 줄당 14px 추가).
+  const margin = { ...margin0, bottom: 40 + (xLineCount - 1) * 14 };
+  const height = opts.height ?? 240 + (xLineCount - 1) * 14;
+  const innerH = height - margin.top - margin.bottom;
+  const maxV = Math.max(1, ...opts.data.map((d) => d.value)) * 1.18;
   const color = seriesColor(opts.colorIndex ?? 0);
+  // highlightMax: 값이 가장 큰 막대의 인덱스(동률이면 맨 앞)만 --amber로 강조한다.
+  const maxRawV = Math.max(...opts.data.map((d) => d.value));
+  const maxIdx = opts.highlightMax ? opts.data.findIndex((d) => d.value === maxRawV) : -1;
 
   // svg.chart{width:100%;height:auto}로 카드 폭을 채운다(라인차트와 같은 이유 — 위 주석 참고).
   const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
@@ -234,13 +301,18 @@ export function barChart(opts: BarChartOptions): HTMLDivElement {
     const h = (d.value / maxV) * innerH;
     const x = margin.left + i * slot + (slot - barW) / 2;
     const y = margin.top + innerH - h;
-    svg.append(svgEl("rect", { x, y, width: barW, height: Math.max(h, 0), rx: 4, fill: color }));
-    const label = svgEl("text", { x: x + barW / 2, y: y - 6, "text-anchor": "middle", "font-size": 11, fill: "var(--chart-text)", "font-weight": 700 });
+    const fill = i === maxIdx ? "var(--amber)" : color;
+    svg.append(svgEl("rect", { x, y, width: barW, height: Math.max(h, 0), rx: 4, fill }));
+    const label = svgEl("text", { x: x + barW / 2, y: y - 7, "text-anchor": "middle", "font-size": 13, fill: "var(--chart-text)", "font-weight": 700 });
     label.textContent = opts.valueFormat ? opts.valueFormat(d.value) : d.value.toLocaleString("ko-KR");
     svg.append(label);
-    const xt = svgEl("text", { x: x + barW / 2, y: margin.top + innerH + 16, "text-anchor": "middle", "font-size": 10.5, fill: "var(--chart-text)" });
-    xt.textContent = d.label;
-    svg.append(xt);
+    wrappedLabels[i].forEach((line, li) => {
+      const xt = svgEl("text", {
+        x: x + barW / 2, y: margin.top + innerH + 19 + li * 14, "text-anchor": "middle", "font-size": xFontSize, fill: "var(--chart-text)",
+      });
+      xt.textContent = line;
+      svg.append(xt);
+    });
   });
   const wrap = document.createElement("div");
   wrap.className = "chart-block";
@@ -253,43 +325,65 @@ export interface HeatmapOptions {
   colLabels: string[];
   matrix: number[][]; // matrix[row][col]
   valueFormat?: (v: number) => string;
-  /** 히트맵을 채워 넣을 컨테이너의 대략적인 폭(px) — 지정하면 칸(cell) 크기를 이 폭에
-   * 맞춰 키운다(46~92px 사이로 제한). 지정하지 않으면 기존처럼 46px 고정 칸으로 그린다
-   * (칸이 곧 격자 의미를 가지는 표라, 다른 차트처럼 무제한으로 늘리지는 않는다). */
+  /** 히트맵을 채워 넣을 컨테이너의 대략적인 폭(px)을 강제 지정하고 싶을 때만 쓴다.
+   * 지정하지 않으면 responsiveHeatmapFit()이 화면 폭(모바일/절반창/데스크톱)에 맞는
+   * 폭과 칸 크기 범위를 자동으로 고른다 — 모바일·1/2 화면에서 스크롤 없이 한 화면에
+   * 들어오게 해 달라는 요청 때문이다. */
   fitWidth?: number;
+}
+
+/** 화면 폭에 따라 히트맵의 "설계 폭"(viewBox width)과 칸(cell) 크기 허용 범위를
+ * 함께 고른다. lineChart의 responsiveLineChartWidth와 같은 취지 — 컨테이너보다
+ * 뷰박스가 넓으면 svg.chart{width:100%}가 전체를 축소해 글자까지 작아지고, 반대로
+ * 강제로 최소 폭을 지키면 옆으로 스크롤이 생긴다. 화면 구간별로 폭과 함께 칸
+ * 최소 크기도 낮춰 줘야(모바일 30px, 데스크톱 46px) 그룹 수가 많아도(최대 8x8)
+ * 실제로 한 화면 폭 안에 다 들어간다. */
+function responsiveHeatmapFit(): { width: number; cellMin: number; cellMax: number } {
+  if (typeof window === "undefined") return { width: 1000, cellMin: 46, cellMax: 92 };
+  const vw = window.innerWidth;
+  if (vw <= 640) return { width: 360, cellMin: 30, cellMax: 60 }; // 휴대폰
+  if (vw <= 900) return { width: 640, cellMin: 38, cellMax: 76 }; // 절반 창·태블릿
+  return { width: 1000, cellMin: 46, cellMax: 92 }; // 데스크톱(기존과 동일)
 }
 
 /** 순차(sequential) 색상 히트맵 — --chart-seq-100/400/700 세 단계를 보간해 쓴다. */
 export function heatmap(opts: HeatmapOptions): HTMLDivElement {
-  // 행 라벨 글자 크기를 10→13px로 키운 만큼(아래), 왼쪽 여백도 글자 폭 추정치를
-  // 늘려 잡아야 긴 그룹 이름이 칸과 겹치지 않는다(char당 7px → 9px).
-  const margin = { top: 10, right: 8, bottom: 8, left: Math.max(96, ...opts.rowLabels.map((r) => r.length * 9)) };
-  // fitWidth가 있으면 칸 크기를 늘려 카드 폭을 채운다 — 카드는 넓은데 히트맵만 작게
-  // 그려져 좌우에 빈 여백이 크게 남던 문제(46px 고정 칸)를 해결한다. 너무 커지면
-  // 오히려 칸 하나의 의미가 옅어지므로 92px에서 상한을 둔다.
-  const cell = opts.fitWidth
-    ? Math.max(46, Math.min(92, (opts.fitWidth - margin.left - margin.right) / Math.max(1, opts.colLabels.length)))
-    : 46;
+  const fit = opts.fitWidth
+    ? { width: opts.fitWidth, cellMin: 46, cellMax: 92 }
+    : responsiveHeatmapFit();
+  // 행 라벨을 "그룹 1"처럼 짧게 통일했으므로(호출부 tab4.ts), 왼쪽 여백도 그만큼
+  // 줄어든다 — 예전(전체 그룹 설명 문구, char당 9px)에는 최소 96px을 깔아야 했지만,
+  // 이제는 실제 짧은 라벨 길이만큼만(char당 11px, 최소 40px) 확보하면 된다.
+  const margin = { top: 10, right: 8, bottom: 8, left: Math.max(40, ...opts.rowLabels.map((r) => r.length * 11)) };
+  // 칸 크기를 fit.width에 맞춰 늘리거나 줄인다(fit.cellMin~fit.cellMax 사이) —
+  // 카드는 넓은데 히트맵만 작게 그려져 여백이 남거나, 반대로 칸이 화면보다 넓어져
+  // 스크롤이 생기는 문제를 함께 해결한다.
+  const cell = Math.max(fit.cellMin, Math.min(fit.cellMax, (fit.width - margin.left - margin.right) / Math.max(1, opts.colLabels.length)));
   const width = margin.left + margin.right + opts.colLabels.length * cell;
   const height = margin.top + margin.bottom + opts.rowLabels.length * cell + 26;
   const maxV = Math.max(1, ...opts.matrix.flat());
+  // 칸(cell)이 좁아지는 모바일에서는 "그룹 1"·"그룹 2"처럼 짧아진 라벨이라도 13px
+  // 그대로 쓰면 옆 칸 라벨과 글자가 겹쳐 붙어 보인다 — 칸 크기에 맞춰 라벨·칸 안
+  // 숫자 폰트도 함께 줄인다(칸이 넓은 데스크톱 등은 기존 13/15px 그대로 유지).
+  const axisFontSize = cell < 45 ? 11 : 13;
+  const valueFontSize = cell < 45 ? 12 : 15;
 
-  // 히트맵은 칸(cell) 하나하나의 크기가 의미를 가지므로(격자) 다른 차트처럼
-  // width:100%로 컨테이너 폭까지 무제한으로 늘리지 않는다 — 위에서 계산한 실제
-  // 크기 그대로 그리고, 화면이 좁을 때만 wrap의 overflow-x:auto로 가로 스크롤을 허용한다.
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `width:${width}px;max-width:${width}px` });
+  // width 자체를 화면 폭에 맞춰 미리 고르므로(위 responsiveHeatmapFit), lineChart와
+  // 동일하게 svg.chart{width:100%;height:auto}(styles.css 공통 규칙)에 맡겨 컨테이너에
+  // 꼭 맞게 스케일되게 한다 — 고정 px 폭을 강제하지 않아 좌우 스크롤이 생기지 않는다.
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
   // 축 라벨(그룹 이름)·칸 안 숫자 모두 가독성이 떨어진다는 요청으로 10px→13px,
   // 11px→15px(굵게)로 키웠다.
   opts.colLabels.forEach((c, ci) => {
     const t = svgEl("text", {
-      x: margin.left + ci * cell + cell / 2, y: margin.top + 14, "text-anchor": "middle", "font-size": 13, "font-weight": 600, fill: "var(--chart-text)",
+      x: margin.left + ci * cell + cell / 2, y: margin.top + 14, "text-anchor": "middle", "font-size": axisFontSize, "font-weight": 600, fill: "var(--chart-text)",
     });
     t.textContent = c;
     svg.append(t);
   });
   opts.rowLabels.forEach((r, ri) => {
     const t = svgEl("text", {
-      x: margin.left - 8, y: margin.top + 26 + ri * cell + cell / 2 + 3, "text-anchor": "end", "font-size": 13, "font-weight": 600, fill: "var(--chart-text)",
+      x: margin.left - 8, y: margin.top + 26 + ri * cell + cell / 2 + 3, "text-anchor": "end", "font-size": axisFontSize, "font-weight": 600, fill: "var(--chart-text)",
     });
     t.textContent = r;
     svg.append(t);
@@ -301,7 +395,7 @@ export function heatmap(opts: HeatmapOptions): HTMLDivElement {
       const y = margin.top + 26 + ri * cell;
       svg.append(svgEl("rect", { x: x + 1, y: y + 1, width: cell - 2, height: cell - 2, rx: 4, fill }));
       const label = svgEl("text", {
-        x: x + cell / 2, y: y + cell / 2 + 5, "text-anchor": "middle", "font-size": 15, "font-weight": 700,
+        x: x + cell / 2, y: y + cell / 2 + 5, "text-anchor": "middle", "font-size": valueFontSize, "font-weight": 700,
         fill: t01 > 0.55 ? "#fff" : "var(--ink)",
       });
       label.textContent = opts.valueFormat ? opts.valueFormat(v) : String(Math.round(v));

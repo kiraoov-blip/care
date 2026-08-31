@@ -205,7 +205,8 @@ function profileLineChart(overallProfiles: OverallProfileRow[], season: string, 
   return lineChart({
     xLabels: hours,
     series,
-    xTickEvery: 1,
+    xTickValues: [1, 3, 6, 9, 12, 15, 18, 21, 24],
+    showMarkers: false,
     yFormat: (v) => `${v.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}kWh/h`,
   });
 }

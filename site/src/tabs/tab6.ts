@@ -238,6 +238,8 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
         { name: "2024 제어 전", values: base24 },
         { name: "2025 제어 전", values: base25 },
       ],
+      xTickValues: [1, 3, 6, 9, 12, 15, 18, 21, 24],
+      showMarkers: false,
       yFormat: kwFormat,
     })
   );
@@ -324,6 +326,8 @@ export function renderTab6(root: HTMLElement, ctx: AppContext): void {
         { name: "제어 후", values: control.map((r) => r["제어후(kW)"]) },
         { name: "운전한도", values: control.map((r) => r["운전한도(kW)"]), dashed: true },
       ],
+      xTickValues: [1, 3, 6, 9, 12, 15, 18, 21, 24],
+      showMarkers: false,
       yFormat: kwFormat,
     })
   );

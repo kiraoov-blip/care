@@ -124,18 +124,23 @@ function shortGroupLabel(label: string): string {
   return label.split(" · ")[0] ?? label;
 }
 
-/** matrix(원본 cluster_transition.pivot(...)) → 히트맵. */
+/** matrix(원본 cluster_transition.pivot(...)) → 히트맵.
+ * 왼쪽 행 라벨도 위쪽 열 라벨과 똑같이 "그룹 1"처럼 짧게 줄인다 — 그룹별 전체
+ * 설명(예: "그룹 1 · 동계민감·변동형")은 바로 위 그룹별 요약표에 이미 나와 있어
+ * 여기서 또 보여줄 필요가 없고, 오히려 왼쪽 여백을 크게 차지해 모바일·절반 화면
+ * 에서 히트맵 전체가 좌우 스크롤 없이는 다 안 보이는 원인이었다. */
 function transitionHeatmap(transition: ClusterTransitionRow[]): HTMLDivElement {
-  const rowLabels = Array.from(new Set(transition.map((t) => t["2024군집"]))).sort();
+  const rowLabelsFull = Array.from(new Set(transition.map((t) => t["2024군집"]))).sort();
+  const rowLabels = rowLabelsFull.map(shortGroupLabel);
   const colLabelsFull = Array.from(new Set(transition.map((t) => t["2025군집"]))).sort();
   const colLabels = colLabelsFull.map(shortGroupLabel);
-  const matrix: number[][] = rowLabels.map((rowLabel) =>
+  const matrix: number[][] = rowLabelsFull.map((rowLabel) =>
     colLabelsFull.map((colLabel) => {
       const found = transition.find((t) => t["2024군집"] === rowLabel && t["2025군집"] === colLabel);
       return found ? found.고객수 : 0;
     })
   );
-  return heatmap({ rowLabels, colLabels, matrix, fitWidth: 1000, valueFormat: (v) => v.toLocaleString("ko-KR") });
+  return heatmap({ rowLabels, colLabels, matrix, valueFormat: (v) => v.toLocaleString("ko-KR") });
 }
 
 /** tt(원본 cluster_transition 가공) — 이동 상세표. */

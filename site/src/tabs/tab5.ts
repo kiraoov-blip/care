@@ -131,15 +131,15 @@ export function renderTab5(root: HTMLElement, ctx: AppContext): void {
   const annualDistCard = sectionCard(`${annualYear}년 연간 추천요금제 분포`, [
     barChart({
       data: PLAN_ORDER.map((p) => ({ label: p, value: annualCounts[p] })) as BarDatum[],
-      width: 560,
       valueFormat: (v) => v.toLocaleString("ko-KR"),
+      highlightMax: true,
     }),
   ]);
   const monthlyDistCard = sectionCard(`${monthlyYear}년 ${monthlyMonth}월 추천요금제 분포`, [
     barChart({
       data: PLAN_ORDER.map((p) => ({ label: p, value: monthlyCounts[p] })) as BarDatum[],
-      width: 560,
       valueFormat: (v) => v.toLocaleString("ko-KR"),
+      highlightMax: true,
     }),
   ]);
   root.append(cardRow([annualDistCard, monthlyDistCard]));
