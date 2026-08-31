@@ -34,18 +34,44 @@ export interface LineChartOptions {
   xTickEvery?: number;
 }
 
+/** 화면 폭에 따라 라인차트의 "설계 폭"(viewBox width)을 다르게 골라준다 — 모바일과
+ * 1/2(절반) 창에서 차트가 좌우로 스크롤되는 문제를 없애 달라는 요청 때문이다.
+ * svg.chart{width:100%}는 컨테이너 폭에 맞춰 뷰박스를 늘리거나 줄이는데, 컨테이너가
+ * 뷰박스보다 좁으면 안의 글자·마크·점 간격까지 전부 같은 비율로 작아진다. 그래서
+ * 화면 폭 구간별로 뷰박스 자체를 컨테이너에 맞춰 미리 좁혀 두면(예: 모바일은
+ * 360, 데스크톱은 1000), min-width로 억지로 늘려 스크롤을 만들지 않고도 글자 크기가
+ * 유지되면서 점 간격도 자연스럽게 좁아진다(요청하신 "그래프 간격을 좁혀 달라"는
+ * 부분과 같은 원리). 640px/900px 두 지점은 이 앱의 다른 반응형 분기(사이드바
+ * 드로어 등)와 같은 기준을 그대로 쓴다. */
+function responsiveLineChartWidth(): number {
+  if (typeof window === "undefined") return 1000;
+  const vw = window.innerWidth;
+  if (vw <= 640) return 360; // 휴대폰
+  if (vw <= 900) return 640; // 절반 창·태블릿
+  return 1000; // 데스크톱(기존과 동일)
+}
+
+/** yFormat이 반환하는 문자열(예: "994.9kWh")에서 숫자·콤마·소수점·부호를 뺀 나머지
+ * (단위, 예: "kWh")만 뽑아낸다 — 축 눈금마다 단위를 반복하지 않고 축 맨 위에
+ * 한 번만 보여 달라는 요청 때문이다. yFormat이 없거나 단위가 없으면 빈 문자열. */
+function extractUnit(sampleFormatted: string): string {
+  const m = sampleFormatted.match(/[^0-9,.\-]+$/);
+  return m ? m[0] : "";
+}
+
 /** 여러 계열의 라인차트 + 범례 + 호버 크로스헤어/툴팁(마크 규격: 2px 선, 4px 라운드 끝점, 8px 마커).
- * width 기본값(1000)은 카드로 감싸지 않고 .main에 바로 놓이는 "화면 폭 전체" 차트를
+ * width 기본값은 카드로 감싸지 않고 .main에 바로 놓이는 "화면 폭 전체" 차트를
  * 기준으로 잡았다(탭1·3·6의 라인차트가 모두 이 경우) — PRAS-DER의 요금/사용량 그래프
  * (.load-line-chart svg{width:100%})처럼 차트가 카드 폭을 그대로 채우게 하기 위함이다.
- * card-row 안에 절반 폭으로 들어가는 차트는 호출부에서 width를 좁게 지정한다. */
+ * 명시적으로 width를 넘기지 않으면 화면 폭에 맞춰 반응형으로 고른다(위
+ * responsiveLineChartWidth 참고). card-row 안에 절반 폭으로 들어가는 차트는
+ * 호출부에서 width를 좁게 지정한다(이 경우는 반응형 계산을 쓰지 않는다). */
 export function lineChart(opts: LineChartOptions): HTMLDivElement {
-  const width = opts.width ?? 1000;
+  const width = opts.width ?? responsiveLineChartWidth();
   const height = opts.height ?? 260;
-  // y축 숫자 폰트를 10→13px로 키운 만큼(아래) 왼쪽 여백도 함께 넓혀야 한다 — 여백은
-  // 그대로 둔 채 글자만 커지면 "994.9kWh"처럼 긴 라벨의 앞자리가 SVG 왼쪽 경계
-  // 밖으로 밀려나 잘려 보인다(예: "994.9kWh" → "4.9kWh"로 잘림, 실제 겪은 버그).
-  const margin = { top: 12, right: 16, bottom: 28, left: 78 };
+  // y축 눈금에서 단위(kWh 등)를 빼고 숫자만 보여주므로(아래), "994.9" 정도만 들어갈
+  // 여백이면 충분하다 — 단위까지 넣어야 했던 이전보다 왼쪽 여백을 다시 줄였다.
+  const margin = { top: 22, right: 16, bottom: 28, left: 50 };
   const innerW = width - margin.left - margin.right;
   const innerH = height - margin.top - margin.bottom;
 
@@ -56,32 +82,33 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
   const xAt = (i: number) => margin.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
   const yAt = (v: number) => margin.top + innerH - ((v - yMin) / (yMax - yMin || 1)) * innerH;
 
-  // svg.chart{width:100%;height:auto}(styles.css)로 카드·본문 폭을 그대로 채운다 —
-  // 예전에는 여기 max-width를 별도로 박아 뒀지만, 그러면 폭이 넓은 카드에서 차트
-  // 옆에 빈 여백이 남았다. 이제 페이지 전체 폭이 PRAS-DER와 같은 1480px로 상한이
-  // 걸려 있으므로(전체 레이아웃 섹션 참고) 차트에 별도 상한을 두지 않아도 무한정
-  // 커지지 않는다.
-  //
-  // min-width(뷰박스 폭과 동일한 값)를 함께 줘서, 화면이 좁아도(특히 모바일) 글자가
-  // 실제 렌더 크기 기준 뷰박스 단위값 그대로(축소 없이) 나오도록 한다 — "뷰박스를
-  // 컨테이너 폭에 맞춰 100%로 늘였다 줄였다" 하는 svg.chart{width:100%}의 특성상,
-  // 컨테이너가 뷰박스보다 좁아지면 안의 글자도 똑같은 비율로 작아져 숫자가 잘 안
-  // 보인다는 요청이 있었다. 대신 이 min-width보다 화면이 좁을 때는(휴대폰 등)
-  // .chart-block의 overflow-x:auto(styles.css)로 가로 스크롤을 허용해, 글자 크기를
-  // 유지하는 쪽을 화면을 줄여 다 보여주는 쪽보다 우선한다.
-  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}`, style: `min-width:${width}px` });
+  // svg.chart{width:100%;height:auto}(styles.css)로 카드·본문 폭을 그대로 채운다.
+  // width 자체를 화면 폭에 맞춰 미리 고르므로(위 responsiveLineChartWidth), 예전처럼
+  // min-width로 뷰박스 폭을 강제해 스크롤을 만들 필요가 없다 — 다만 아주 좁은
+  // 기기(320px 이하 구형 휴대폰 등) 대비 최소한의 안전판으로 .chart-block의
+  // overflow-x:auto(styles.css)는 그대로 남겨 둔다.
+  const svg = svgEl("svg", { class: "chart", viewBox: `0 0 ${width} ${height}` });
 
-  // 격자(recessive) + y축 눈금 — 축 숫자를 더 크고 뚜렷하게(요청 반영: 10 → 13).
+  // 단위를 축 맨 위에 한 번만 표시(요청 반영) — yFormat(0)에서 뽑아낸다.
+  const unit = opts.yFormat ? extractUnit(opts.yFormat(0)) : "";
+  if (unit) {
+    const unitLabel = svgEl("text", { x: margin.left - 8, y: 12, "text-anchor": "end", "font-size": 11, fill: "var(--chart-text)" });
+    unitLabel.textContent = unit;
+    svg.append(unitLabel);
+  }
+
+  // 격자(recessive) + y축 눈금 — 숫자만 표시(단위는 위에서 한 번만).
   const ticks = 4;
   for (let t = 0; t <= ticks; t++) {
     const v = yMin + ((yMax - yMin) * t) / ticks;
     const y = yAt(v);
     svg.append(svgEl("line", { x1: margin.left, x2: width - margin.right, y1: y, y2: y, stroke: "var(--chart-grid)", "stroke-width": 1 }));
+    const formatted = opts.yFormat ? opts.yFormat(v) : v.toLocaleString("ko-KR");
     const label = svgEl("text", { x: margin.left - 8, y: y + 4, "text-anchor": "end", "font-size": 13, fill: "var(--chart-text)" });
-    label.textContent = opts.yFormat ? opts.yFormat(v) : v.toLocaleString("ko-KR");
+    label.textContent = unit ? formatted.slice(0, formatted.length - unit.length) : formatted;
     svg.append(label);
   }
-  // x축 라벨 — 마찬가지로 10 → 12로 키운다.
+  // x축 라벨
   const everyN = opts.xTickEvery ?? Math.max(1, Math.ceil(n / 12));
   opts.xLabels.forEach((lab, i) => {
     if (i % everyN !== 0 && i !== n - 1) return;

@@ -152,6 +152,17 @@ a { color: var(--brand-dark); }
 .tab-btn:hover { color: #f6ece0; background: rgba(255,255,255,0.06); }
 .tab-btn.active { color: #fff; background: rgba(240,129,58,.2); box-shadow: inset 0 0 0 1px rgba(240,129,58,.42); }
 .tab-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+/* 좁은 화면(아래 640px 미디어쿼리에서 노출) 전용 탭 선택 드롭다운 — 버튼 8개를
+   가로로 늘어놓으면 화면 폭에 다 들어오지 못해 좌우로 스크롤해야 어떤 탭이
+   있는지 확인할 수 있었다. select는 누르는 즉시 8개 이름이 전부 목록으로
+   펼쳐지므로, 넓은 화면의 .tablist 버튼 줄을 대체해 넣는다(기본은 숨김). */
+.tab-select {
+  display: none; flex: 1 1 auto; min-width: 0;
+  padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,0.08); color: #f6ece0; font-size: 12.5px; font-weight: 700;
+}
+.tab-select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.tab-select option { color: #1a1208; background: #fff; font-weight: 500; }
 .site-home-btn {
   margin-left: auto; flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
   padding: 6px 11px; border-radius: 8px; color: #cbb69a; font-size: 12px; font-weight: 700;
@@ -393,19 +404,24 @@ table.data-table thead th {
   font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.01em; z-index: 1;
   /* 열이 많은 표(고객별 요금 모니터링 등)는 헤더 문구가 데이터 값보다 길어서 표 전체
      너비를 넓히는 주된 원인이었다 — 헤더만 두 줄로 접히게 허용해 폭을 줄인다.
-     데이터 칸(td)은 그대로 한 줄(nowrap) 유지. renderTable의 headerBreakLabel()이
-     "(" 앞에 공백을 넣어 그 지점에서 줄바꿈되게 하지만, "최대시간 사용량"처럼 그
-     앞부분 자체가 긴 경우까지 완전히 막지는 못한다 — min-width를 4.2em→5em으로
-     살짝 늘려 두 줄로 접힐 때 단어 중간이 잘리는 경우를 더 줄인다(금액 열이
-     만원 단위로 좁아진 만큼 확보된 여유를 여기 씀). */
-  white-space: normal; line-height: 1.25; vertical-align: bottom; min-width: 5em;
-  /* headerBreakLabel()이 "(" 앞에는 띄어쓰기를 넣어 주지만, "최대시간 사용량"처럼
-     띄어쓰기 없는 한글 낱말 자체가 길면 브라우저가 그 낱말 중간(예: "사용 량")을
-     그냥 잘라버린다 — keep-all은 CJK 텍스트에서 공백이 있는 지점에서만 줄바꿈하고
-     낱말 중간은 last-resort로만 자르게 해, 남는 공간이 있으면 낱말을 온전히 유지한
-     채로 줄바꿈 지점을 고른다. */
-  word-break: keep-all;
+     데이터 칸(td)은 그대로 한 줄(nowrap) 유지. */
+  white-space: normal; line-height: 1.25; vertical-align: bottom; min-width: 2.6em;
+  /* 예전에는 word-break:keep-all(공백이 있는 지점에서만 줄바꿈)을 썼는데, 이번
+     요청으로 모바일·1/2 화면·전체 웹 화면 모두 줄바꿈을 "글자(음절)" 단위로
+     바꾼다 — 한글은 한 음절(글자)이 이미 하나의 완결된 표시 단위라 "사용량"이
+     "사용"/"량"처럼 글자 경계에서 줄바뀌어도(음절 내부가 아니라 음절과 음절
+     "사이"에서만 끊긴다) 자연스럽게 읽힌다. break-all로 공백 유무와 무관하게
+     매 글자 사이 어디서나 줄바꿈 지점을 허용한다. */
+  word-break: break-all;
 }
+/* 숫자 열(.num)만 5em 최소 폭을 유지한다 — "연간사용량 (kWh)"처럼 긴 복합
+   단위 라벨이 두 줄로 접힐 때 필요한 폭이다. "월"·"그룹"·"연도"처럼 글자 수가
+   짧은 텍스트 열까지 똑같이 5em 바닥을 깔면 실제 내용보다 열이 불필요하게
+   넓어져(예: "월" 열의 양옆 여백) 표 전체 폭이 늘어나고 모바일에서 좌우
+   스크롤이 더 잘 생긴다 — 텍스트 열은 위 기본값(2.6em)을 그대로 쓰고, 숫자
+   열만 여기서 5em으로 다시 넓힌다. 실제 칸 내용이 그보다 넓은 열(예: "추천
+   요금제")은 이 최소값과 무관하게 브라우저가 알아서 필요한 만큼 넓힌다. */
+table.data-table thead th.num { min-width: 5em; }
 table.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--line) 22%, transparent); }
 table.data-table tbody tr:hover { background: var(--brand-soft); }
 .table-scroll { max-height: 460px; overflow-y: auto; }
@@ -491,6 +507,8 @@ footer.app-footer {
   .site-home-btn span { display: none; }
   .site-home-btn { padding: 7px; }
   .tab-btn { padding: 7px 10px; font-size: 12px; }
+  .tablist { display: none; }
+  .tab-select { display: block; }
   .hero { padding: 16px 0; }
   .hero-inner { padding: 0 14px; gap: 6px; }
   .hero-inner h1 { font-size: 20px; line-height: 1.38; overflow-wrap: anywhere; }
@@ -503,6 +521,14 @@ footer.app-footer {
   .controls-row { gap: 0.5rem; }
   .control { min-width: 0; flex: 1 1 140px; }
   .control .radio-row label { font-size: 0.78rem; padding: 0.28rem 0.5rem; gap: 0.22rem; }
+  /* 위 table.data-table thead th.num{min-width:5em}는 데스크톱·태블릿 기준으로
+     정한 값이라, "월" 열을 2.6em까지 줄인 뒤에도 숫자 열 6개(각 5em)가 남아
+     휴대폰 폭(390px 등)에서는 표 전체 너비가 여전히 화면보다 약간(20px 안팎)
+     넓어 좌우 스크롤이 남았다. 휴대폰에서만 숫자 열 최소폭을 4.4em으로 한 번
+     더 줄인다 — break-all로 글자 단위 줄바꿈이 되어 있어 폭이 좁아지면 헤더
+     문구가 한 줄 더 늘어날 뿐이고(예: "2024년 고객당 평균 사용량 (kWh)"가
+     3줄로), 잘리거나 겹치지 않는다. */
+  table.data-table thead th.num { min-width: 4.1em; }
   .section-title { font-size: 1.22rem; margin-top: 1.6rem; }
   .subheading { font-size: 0.96rem; margin-top: 1.5rem; }
   .insight-banner { padding: 0.9rem 1rem; gap: 0.9rem; }

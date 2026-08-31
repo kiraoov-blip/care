@@ -67,6 +67,19 @@ async function boot(): Promise<void> {
 
   // ── 상단 바 ──
   const tablist = el("div", { className: "tablist" });
+  // 휴대폰처럼 화면이 좁으면 8개 탭 버튼이 한 줄에 다 들어오지 않아 가로로 스크롤해야
+  // 탭 이름을 확인할 수 있었다 — 어떤 탭이 있는지 한눈에 안 보이는 문제라, 좁은 화면
+  // 전용으로 <select> 드롭다운을 하나 더 두고(CSS 미디어쿼리로 폭 좁을 때만 보이게,
+  // 버튼 목록은 숨김) 눌러서 목록 전체를 펼쳐보고 바로 선택할 수 있게 한다.
+  const tabSelect = el("select", { className: "tab-select" }) as HTMLSelectElement;
+  tabSelect.setAttribute("aria-label", "탭 선택");
+  for (const tab of TABS) {
+    const opt = el("option", { text: tab.label }) as HTMLOptionElement;
+    opt.value = tab.id;
+    tabSelect.append(opt);
+  }
+  tabSelect.addEventListener("change", () => setActiveTab(tabSelect.value));
+
   const panelsHost = el("div", { className: "main" });
   const panels = new Map<string, HTMLDivElement>();
   for (const tab of TABS) {
@@ -83,6 +96,7 @@ async function boot(): Promise<void> {
     tablist.querySelectorAll<HTMLButtonElement>(".tab-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.tabId === activeTabId);
     });
+    tabSelect.value = activeTabId;
   }
 
   function renderIfNeeded(tabId: string) {
@@ -135,7 +149,7 @@ async function boot(): Promise<void> {
     document.createTextNode("CARE"),
     el("span", { text: "JEJU" }),
   ]);
-  const nav = el("div", { className: "topbar" }, [brandLogo, tablist, homeBtn, menuBtn]);
+  const nav = el("div", { className: "topbar" }, [brandLogo, tablist, tabSelect, homeBtn, menuBtn]);
 
   const hero = el("div", { className: "hero" }, [
     el("div", { className: "hero-inner" }, [

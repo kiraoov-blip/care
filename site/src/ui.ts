@@ -93,6 +93,22 @@ function headerBreakLabel(label: string): string {
   return label.replace(/([^\s(])\(/g, "$1 (");
 }
 
+/** "&"/"<"/">"만 최소한으로 이스케이프한다(표 헤더 라벨에는 따옴표가 없어 그 외는 불필요). */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* word-break:break-all(요청에 따라 모든 화면에서 "글자" 단위로 줄바꿈)을 표 헤더에도
+ * 그대로 적용하면, "사용량(kWh)"처럼 괄호 안에 들어간 짧은 영문 단위 약어까지 글자
+ * 사이 아무데서나 잘려 "(K" / "WH)"처럼 단위 자체가 쪼개져 보인다 — 한글 음절과
+ * 달리 "kWh"·"%"·"원" 같은 약어는 하나의 완결된 표시 단위라 쪼개지면 오히려
+ * 읽기 어려워진다. 라벨 끝의 괄호 단위만 줄바꿈되지 않게 감싸고, 나머지 한글
+ * 구절 부분은 그대로 break-all로 글자 단위 줄바꿈이 적용되게 둔다. */
+function headerLabelHtml(label: string): string {
+  const escaped = escapeHtml(headerBreakLabel(label));
+  return escaped.replace(/\(([^()]*)\)\s*$/, (_m, inner: string) => `<span style="white-space:nowrap">(${inner})</span>`);
+}
+
 export interface TableOptions {
   height?: number; // px, 지정하면 세로 스크롤 표(원본 st.dataframe height=)
 }
@@ -109,7 +125,7 @@ export function renderTable<T extends Record<string, unknown>>(
   const headRow = el("tr");
   for (const c of columns) {
     const kind = c.kind ?? inferKind(c.label);
-    headRow.append(el("th", { className: kind === "text" ? "" : "num", text: headerBreakLabel(c.label) }));
+    headRow.append(el("th", { className: kind === "text" ? "" : "num", html: headerLabelHtml(c.label) }));
   }
   thead.append(headRow);
   const tbody = el("tbody");

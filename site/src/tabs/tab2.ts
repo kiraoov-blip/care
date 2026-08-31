@@ -38,7 +38,7 @@ let year: 2024 | 2025 = 2025;
 let month = 8; // 원본 c.selectbox(list(range(1,13)), index=7) → 8
 let cutoff = 20;
 let currentPlan: "기본형" | "프리미엄형" = "기본형";
-let sortKey: "수요관리우선점수" | "TOU대비절감(원)" | "월말예상(kWh)" | "연간사용량(kWh)" = "수요관리우선점수";
+let sortKey: "수요관리우선점수" | "TOU대비절감(원)" | "월말예상(kWh)" | "연간사용량(kWh)" = "TOU대비절감(원)";
 let planFilter = "전체";
 let clusterFilter = "전체";
 // 열이 15개나 되어(만원 단위로 줄여도) 화면 폭 안에 다 들어가지 못해 표 아래에
