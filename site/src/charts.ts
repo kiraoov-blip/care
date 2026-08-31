@@ -185,7 +185,15 @@ export function lineChart(opts: LineChartOptions): HTMLDivElement {
       .join("");
     tip.innerHTML = `<div style="margin-bottom:2px;opacity:.75">${opts.xLabels[clamped]}${opts.yLabel ? " " + opts.yLabel : ""}</div>${lines}`;
     tip.style.left = `${(xAt(clamped) / width) * rect.width}px`;
-    tip.style.top = `${(margin.top / height) * rect.height}px`;
+    // 이전에는 툴팁을 차트 맨 위 여백(margin.top) 지점에 두고 CSS의
+    // translate(-50%,-110%)로 그 위쪽에 띄웠는데, margin.top이 22px 밖에 안 돼
+    // 툴팁 박스(2~3줄이면 40~60px)가 차트 영역 위로 넘치고, .chart-block의
+    // overflow-x:auto가 (스펙상) overflow-y도 자동으로 clip 처리해서 툴팁 윗부분과
+    // 크로스헤어 화살표가 잘려 보이는 문제가 있었다 — 툴팁을 차트 영역 "안쪽"에서
+    // 크로스헤어를 살짝 덮듯 아래로 내려 그리도록 바꿔 항상 차트 상자 안에 들어가게
+    // 한다(가로 위치는 그대로 마우스를 따라가고, 세로는 항상 위쪽 여백 바로
+    // 아래 고정 지점).
+    tip.style.top = `${((margin.top + 4) / height) * rect.height}px`;
     tip.classList.add("show");
   });
   hitLayer.addEventListener("mouseleave", () => {

@@ -464,7 +464,12 @@ table.data-table tbody tr:hover { background: var(--brand-soft); }
 .chart-tip {
   position: absolute; pointer-events: none; background: var(--nav-dark); color: #f6ece0;
   font-size: 0.74rem; padding: 0.4rem 0.55rem; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-  transform: translate(-50%, -110%); white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 10;
+  /* 이전에는 -110%(위쪽으로 띄움)였는데, 앵커점이 차트 맨 위 여백(margin.top)
+     바로 아래라 툴팁 박스가 차트 영역 위로 넘쳐 .chart-block의 overflow-x:auto가
+     함께 강제하는 overflow-y에 잘렸다(스펙상 auto+visible 조합은 허용되지 않아
+     visible도 auto로 취급된다). 위로 띄우는 대신 앵커점 "아래"로 그려 항상 차트
+     상자 안쪽에 들어가게 한다. */
+  transform: translate(-50%, 0); white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 10;
 }
 .chart-tip.show { opacity: 1; }
 /* 차트는 원래 그려진 크기(viewBox) 이상으로는 커지지 않는다(각 차트가 자기 max-width를
